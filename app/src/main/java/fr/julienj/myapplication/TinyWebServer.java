@@ -292,7 +292,7 @@ public class TinyWebServer extends Thread {
                 break;
             default:
 
-                //System.out.println("jj url location -> " + location);
+                System.out.println("jj url location -> " + location);
                 URL geturl = getDecodedUrl("http://localhost" + location);
                 String[] dirPath = geturl.getPath().split("/");
                 String fullFilePath=geturl.getPath();
