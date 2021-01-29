@@ -3,6 +3,8 @@ package fr.julienj.myapplication;
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -21,6 +23,8 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelUuid;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -42,6 +46,11 @@ import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
+import com.welie.blessed.BluetoothCentralManager;
+import com.welie.blessed.BluetoothCentralManagerCallback;
+import com.welie.blessed.BluetoothPeripheral;
+import com.welie.blessed.BluetoothPeripheralCallback;
+import com.welie.blessed.GattStatus;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -72,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter<String> pairedListAdapter;
     private List<BluetoothDevice> pairedDevices;
     private List<BluetoothDevice> scannedDevices;
+
+    private BluetoothCentralManager central;
 
     private boolean scanning = false;
     @Override
@@ -303,9 +314,124 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+         BluetoothCentralManagerCallback bluetoothCentralManagerCallback = new BluetoothCentralManagerCallback() {
+            @Override
+            public void onDiscoveredPeripheral(BluetoothPeripheral peripheral, ScanResult scanResult) {
+                System.out.println("jj test");
+                central.stopScan();
+
+                List<ParcelUuid> parcelUuids = scanResult.getScanRecord().getServiceUuids();
+
+                List<UUID> serviceList = new ArrayList<>();
+
+                for (int i = 0; i < parcelUuids.size(); i++)
+                {
+                    UUID serviceUUID = parcelUuids.get(i).getUuid();
+
+                    System.out.println("jj "+serviceUUID.toString());
+
+                    if (!serviceList.contains(serviceUUID))
+                        serviceList.add(serviceUUID);
+                }
+
+
+                //central.connectPeripheral(peripheral, peripheralCallback);
+            }
+        };
+
+// Create BluetoothCentral and receive callbacks on the main thread
+        BluetoothCentralManager central = new BluetoothCentralManager(getApplicationContext(),bluetoothCentralManagerCallback , new Handler(Looper.getMainLooper()));
+        BluetoothPeripheral peripheral = central.getPeripheral("C4:BE:84:1A:C2:07");
+        BluetoothPeripheral peripheral2 = central.getPeripheral("08:21:EF:6C:9B:78");
+        BluetoothPeripheral peripheral3 = central.getPeripheral("2C:33:7A:26:40:A6");
+        central.scanForPeripherals();
+        System.out.println("jj test"+peripheral.getName()+": "+peripheral.readRemoteRssi()+ ":"+peripheral.getAddress());
+        central.autoConnectPeripheral(peripheral, peripheralCallback);
+        central.autoConnectPeripheral(peripheral2, peripheralCallback);
+        central.autoConnectPeripheral(peripheral2, peripheralCallback);
+        central.scanForPeripherals();
+        //UUID test= new UUID()
+        //BluetoothGattCharacteristic characteristic= new BluetoothGattCharacteristic()
+        //peripheral.
+        //peripheral.getAddress()
+
+        UUID BLOODPRESSURE_SERVICE_UUID = UUID.fromString("0000dfb2-0000-1000-8000-00805f9b34fb");
+        System.out.println("jj test"+peripheral.getServices());
+        peripheral.getServices();
+
+        BluetoothManager mBluetoothManager;
+        BluetoothAdapter mBluetoothAdapter;
+         //mBluetoothManager.getAdapter().getRemoteDevice();
+        // UUID DIS_SERVICE_UUID = UUID.fromString("2A00");
+
+        // Define blood pressure service UUID
+
+
+// Scan for peripherals with a certain service UUID
+        central.scanForPeripheralsWithServices(new UUID[]{BLOODPRESSURE_SERVICE_UUID});
+
+
+
+        //peripheral.readCharacteristic()
+
+// Define bloo
+
+
+
 
 
     }
+
+    private final BluetoothPeripheralCallback peripheralCallback = new BluetoothPeripheralCallback() {
+        @Override
+        public void onServicesDiscovered(BluetoothPeripheral peripheral) {
+            // Request a higher MTU, iOS always asks for 185
+            peripheral.requestMtu(185);
+            System.out.println("jj test1");
+
+
+        }
+
+        @Override
+        public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, GattStatus status) {
+            System.out.println("jj test1");
+
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, GattStatus status) {
+            System.out.println("jj test1");
+
+        }
+
+        @Override
+        public void onCharacteristicUpdate(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, GattStatus status) {
+            System.out.println("jj test1");
+
+        }
+
+        @Override
+        public void onMtuChanged(BluetoothPeripheral peripheral, int mtu, GattStatus status) {
+            System.out.println("jj test1");
+
+        }
+
+        private void sendMeasurement(Intent intent, BluetoothPeripheral peripheral ) {
+            System.out.println("jj test1");
+
+        }
+
+        private void writeContourClock(BluetoothPeripheral peripheral) {
+            System.out.println("jj test1");
+
+        }
+
+        private void writeGetAllGlucoseMeasurements(BluetoothPeripheral peripheral) {
+            System.out.println("jj test1");
+
+        }
+    };
+
 
     private BluetoothCallback bluetoothCallback = new BluetoothCallback() {
         @Override
