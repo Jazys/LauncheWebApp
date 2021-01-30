@@ -8,6 +8,9 @@ class Constants {
     static final String NOTIFICATION_CHANNEL = BuildConfig.APPLICATION_ID + ".Channel";
     static final String INTENT_CLASS_MAIN_ACTIVITY = BuildConfig.APPLICATION_ID + ".MainActivity";
 
+    static final String USB_ATTACHED="android.hardware.usb.action.USB_DEVICE_ATTACHED";
+    static final String USB_DETTACHED="android.hardware.usb.action.USB_DEVICE_DETACHED";
+
     // values have to be unique within each app
     static final int NOTIFY_MANAGER_START_FOREGROUND_SERVICE = 1001;
 

@@ -21,22 +21,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
-
-import com.hoho.android.usbserial.driver.CdcAcmSerialDriver;
-import com.hoho.android.usbserial.driver.ProbeTable;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.welie.blessed.BluetoothBytesParser;
-import android.content.res.AssetManager;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
-import android.net.DhcpInfo;
 import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -45,20 +39,14 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.format.Formatter;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-
-import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.Configuration;
-import com.corundumstudio.socketio.SocketIOClient;
 import com.corundumstudio.socketio.SocketIOServer;
-import com.corundumstudio.socketio.listener.ConnectListener;
-import com.corundumstudio.socketio.listener.DataListener;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import com.welie.blessed.BluetoothCentralManager;
@@ -67,22 +55,11 @@ import com.welie.blessed.BluetoothPeripheral;
 import com.welie.blessed.BluetoothPeripheralCallback;
 import com.welie.blessed.GattStatus;
 import com.welie.blessed.WriteType;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
-
 import me.aflak.bluetooth.Bluetooth;
 import me.aflak.bluetooth.interfaces.BluetoothCallback;
 import me.aflak.bluetooth.interfaces.DeviceCallback;
@@ -92,13 +69,19 @@ import static android.bluetooth.BluetoothGatt.CONNECTION_PRIORITY_HIGH;
 
 public class MainActivity extends AppCompatActivity  implements ServiceConnection, SerialListener {
 
-    private static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB";
-    private SerialService service;
-
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-        service = ((SerialService.SerialBinder) iBinder).getService();
-        service.attach(this);
+
+        if( iBinder.getClass().toString().contains("fr.julienj.myapplication.SerialService"))
+        {
+            service = ((SerialService.SerialBinder) iBinder).getService();
+            service.attach(this);
+        }
+        else if (iBinder.getClass().toString().contains("fr.julienj.myapplication.WebServerService"))
+        {
+            serviceWeb = ((WebServerService.WebServerBinder) iBinder).getService();
+            serviceWeb.startWebServer();
+        }
     }
 
     @Override
@@ -153,6 +136,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     private UsbSerialPort usbSerialPort;
     private boolean scanning = false;
     private SerialInputOutputManager usbIoManager;
+    private SerialService service;
+    private WebServerService serviceWeb;
 
     private boolean lsConnected=false;
 
@@ -160,32 +145,36 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
+        //Pour avoir la fenetre en plein écran
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
+        //Pour démarrer le service liée à la connexion en USB
         bindService(new Intent(this, SerialService.class), this, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, WebServerService.class), this, Context.BIND_AUTO_CREATE);
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if(intent.getAction().equals(INTENT_ACTION_GRANT_USB)) {
+                if(intent.getAction().equals(Constants.INTENT_ACTION_GRANT_USB)) {
                     usbPermission = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
                             ? UsbPermission.Granted : UsbPermission.Denied;
                     connect();
-                }
-
-                if(intent.getAction().equals("android.hardware.usb.action.USB_DEVICE_ATTACHED")) {
+                }else if(intent.getAction().equals(Constants.USB_ATTACHED)) {
                     connect();
+                }else if(intent.getAction().equals(Constants.USB_DETTACHED))
+                {
+
                 }
             }
         };
-        registerReceiver(broadcastReceiver, new IntentFilter(INTENT_ACTION_GRANT_USB));
-        registerReceiver(broadcastReceiver, new IntentFilter("android.hardware.usb.action.USB_DEVICE_ATTACHED"));
+        registerReceiver(broadcastReceiver, new IntentFilter(Constants.INTENT_ACTION_GRANT_USB));
+        registerReceiver(broadcastReceiver, new IntentFilter(Constants.USB_ATTACHED));
+        registerReceiver(broadcastReceiver, new IntentFilter(Constants.USB_DETTACHED));
 
 
-
+        //Pour demander les permissions
         if (Build.VERSION.SDK_INT >= 23) {
             int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
             if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
@@ -478,7 +467,6 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     @Override
     public void onStart() {
         super.onStart();
-
         if(service != null)
             service.attach(this);
         else
@@ -495,7 +483,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     public void onDestroy() {
         if (lsConnected != false)
             disconnect();
-        stopService(new Intent(this, SerialService.class));
+        getApplicationContext().stopService(new Intent(this, SerialService.class));
         super.onDestroy();
     }
 
@@ -679,22 +667,6 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     };
 
 
-    public void onNewData(byte[] data) {
-        System.out.println("jj size "+data.length);
-        System.out.println("jj +"+HexDump.dumpHexString(data));
-
-        String mess="";
-        for(int i=0 ; i<data.length; i++){
-            mess+= String.valueOf((char)data[i]);
-        }
-        System.out.println("jj "+mess);
-
-    }
-
-
-    public void onRunError(Exception e) {
-
-    }
 
     public void connect()
     {
@@ -720,7 +692,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         UsbDeviceConnection usbConnection = manager.openDevice(driver.getDevice());
         if(usbConnection == null && usbPermission == UsbPermission.Unknown && !manager.hasPermission(driver.getDevice())) {
             usbPermission = UsbPermission.Requested;
-            PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(INTENT_ACTION_GRANT_USB), 0);
+            PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(Constants.INTENT_ACTION_GRANT_USB), 0);
             manager.requestPermission(driver.getDevice(), usbPermissionIntent);
             return;
         }
