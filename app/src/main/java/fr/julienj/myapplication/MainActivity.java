@@ -1,7 +1,6 @@
 package fr.julienj.myapplication;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -45,6 +44,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.TextView;
+
 import com.corundumstudio.socketio.Configuration;
 import com.corundumstudio.socketio.SocketIOServer;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
@@ -81,6 +82,11 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         {
             serviceWeb = ((WebServerService.WebServerBinder) iBinder).getService();
             serviceWeb.startWebServer();
+        }
+        else if (iBinder.getClass().toString().contains("fr.julienj.myapplication.WebSocketServerService"))
+        {
+            serviceWSS = ((WebSocketServerService.WebSocketServerBinder) iBinder).getService();
+            serviceWSS.startWSS();
         }
     }
 
@@ -138,6 +144,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     private SerialInputOutputManager usbIoManager;
     private SerialService service;
     private WebServerService serviceWeb;
+    private WebSocketServerService serviceWSS;
+    private TextView ipTextView;
 
     private boolean lsConnected=false;
 
@@ -153,6 +161,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         //Pour démarrer le service liée à la connexion en USB
         bindService(new Intent(this, SerialService.class), this, Context.BIND_AUTO_CREATE);
         bindService(new Intent(this, WebServerService.class), this, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, WebSocketServerService.class), this, Context.BIND_AUTO_CREATE);
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -194,7 +203,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             @Override
             public void onClick(View v) {
-                TinyWebServer.startServer("0.0.0.0",9000, "", getApplicationContext().getAssets());
+                //TinyWebServer.startServer("0.0.0.0",9000, "", getApplicationContext().getAssets());
 
             }
         });
@@ -204,40 +213,23 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             @Override
             public void onClick(View v) {
-                TinyWebServer.stopServer();
+                //TinyWebServer.stopServer();
 
 
             }
         });
+
+        ipTextView = (TextView)findViewById(R.id.textView);
 
         WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInf = wifiMan.getConnectionInfo();
         int ipAddress = wifiInf.getIpAddress();
         String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff),(ipAddress >> 8 & 0xff),(ipAddress >> 16 & 0xff),(ipAddress >> 24 & 0xff));
 
-
+        ipTextView.setText(ip);
 
         System.out.println("jj "+ip);
 
-        ChatServer s = null;
-        try {
-            s = new ChatServer(9091);
-            s.start();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
-        /*String[] names = new String[]{"Samsung Galaxy S7"};
-        List<ScanFilter> filters = null;
-        if(names != null) {
-            filters = new ArrayList<>();
-            for (String name : names) {
-                ScanFilter filter = new ScanFilter.Builder()
-                        .setDeviceName(name)
-                        .build();
-                filters.add(filter);
-            }
-        }*/
 
         String[] peripheralAddresses = new String[]{"C4:BE:84:1A:C2:07"};
 // Build filters list
@@ -325,55 +317,6 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             @Override public void onConnectError(BluetoothDevice device, String message) {}
         });
-
-        /*
-
-        config=new Configuration();
-        config.setHostname("0.0.0.0");
-        config.setPort(9092);
-        config.setOrigin("Access-Control-Allow-Origin");
-
-
-        server=new SocketIOServer(config);
-        server.start();
-        ConnectListener tt=new ConnectListener() {
-            @Override
-            public void onConnect(SocketIOClient client) {
-                System.out.println("jj connect");
-
-                System.out.println("jj "+config.getOrigin());
-            }
-        };
-
-        DataListener t= new DataListener() {
-            @Override
-            public void onData(SocketIOClient client, Object data, AckRequest ackSender) throws Exception {
-                System.out.println("jj data");
-            }
-        };
-
-
-
-        server.addConnectListener(tt);
-        server.addEventListener("message", this.getClass(), t);
-        */
-
-        //connect();
-
-
-
-        /*List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
-        if (availableDrivers.isEmpty()) {
-           System.out.println("jj vide usb");
-        }*/
-
-        // Open a connection to the first available driver.
-       /* UsbSerialDriver driver = availableDrivers.get(0);
-        UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
-        if (connection == null) {
-            // add UsbManager.requestPermission(driver.getDevice(), ..) handling here
-            System.out.println("jj non");
-        }*/
 
 
         Button startApp = (Button) findViewById(R.id.buttonLaunch);

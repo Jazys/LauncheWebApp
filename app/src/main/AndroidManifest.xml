@@ -46,6 +46,8 @@
         <service android:name=".SerialService" />
 
         <service android:name=".WebServerService" />
+
+        <service android:name=".WebSocketServerService" />
     </application>
 
 </manifest>

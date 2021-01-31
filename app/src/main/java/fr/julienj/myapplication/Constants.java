@@ -2,6 +2,12 @@ package fr.julienj.myapplication;
 
 class Constants {
 
+    //port Web HTTP
+    static final int PORT_HTTP=9000;
+
+    //port WSS
+    static final int PORT_WS=9091;
+
     // values have to be globally unique
     static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB";
     static final String INTENT_ACTION_DISCONNECT = BuildConfig.APPLICATION_ID + ".Disconnect";

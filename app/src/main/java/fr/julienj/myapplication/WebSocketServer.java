@@ -32,40 +32,52 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+
 import org.java_websocket.WebSocket;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ClientHandshake;
-import org.java_websocket.server.WebSocketServer;
 
 /**
  * A simple WebSocketServer implementation. Keeps track of a "chatroom".
  */
-public class ChatServer extends WebSocketServer {
+public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
 
-    public ChatServer(int port) throws UnknownHostException {
+    HashMap<String,WebSocket> client= new HashMap<String, WebSocket>();
+
+    public WebSocketServer(int port) throws UnknownHostException {
         super(new InetSocketAddress(port));
     }
 
-    public ChatServer(InetSocketAddress address) {
+    public WebSocketServer(InetSocketAddress address) {
         super(address);
     }
 
-    public ChatServer(int port, Draft_6455 draft) {
+    public WebSocketServer(int port, Draft_6455 draft) {
         super(new InetSocketAddress(port), Collections.<Draft>singletonList(draft));
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
+
+        if(!client.containsKey(conn.getRemoteSocketAddress().getAddress().getHostAddress()+":"+conn.getRemoteSocketAddress().getPort()))
+            client.put(conn.getRemoteSocketAddress().getAddress().getHostAddress()+":"+conn.getRemoteSocketAddress().getPort(), conn);
+
         conn.send("Welcome to the server!"); //This method sends a message to the new client
         broadcast("new connection: " + handshake
                 .getResourceDescriptor()); //This method sends a message to all clients connected
         System.out.println("jj "+
-                conn.getRemoteSocketAddress().getAddress().getHostAddress() + " entered the room!");
+                conn.getRemoteSocketAddress().getAddress().getHostAddress() + " entered the room!" + conn.getRemoteSocketAddress().getPort());
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
+
+        if(client.containsKey(conn.getRemoteSocketAddress().getAddress().getHostAddress()+":"+conn.getRemoteSocketAddress().getPort()))
+            client.remove(conn.getRemoteSocketAddress().getAddress().getHostAddress()+":"+conn.getRemoteSocketAddress().getPort());
+
         broadcast(conn + " has left the room!");
         System.out.println("jj "+conn + " has left the room!");
     }
@@ -82,29 +94,6 @@ public class ChatServer extends WebSocketServer {
         System.out.println("jj "+conn + ": " + message);
     }
 
-
-    public static void main(String[] args) throws InterruptedException, IOException {
-        int port = 8887; // 843 flash policy port
-        try {
-            port = Integer.parseInt(args[0]);
-        } catch (Exception ex) {
-        }
-        ChatServer s = new ChatServer(port);
-        s.start();
-
-        System.out.println("jj ChatServer started on port: " + s.getPort());
-
-        BufferedReader sysin = new BufferedReader(new InputStreamReader(System.in));
-        while (true) {
-            String in = sysin.readLine();
-            s.broadcast(in);
-            if (in.equals("exit")) {
-                s.stop(1000);
-                break;
-            }
-        }
-    }
-
     @Override
     public void onError(WebSocket conn, Exception ex) {
         ex.printStackTrace();
@@ -115,7 +104,7 @@ public class ChatServer extends WebSocketServer {
 
     @Override
     public void onStart() {
-        System.out.println("jj Server started!");
+        System.out.println("jj WSS  Server started!");
         setConnectionLostTimeout(0);
         setConnectionLostTimeout(100);
     }

@@ -22,7 +22,7 @@ public class WebServerService extends Service {
 
     public void startWebServer()
     {
-        TinyWebServer.startServer("0.0.0.0",9000, "", getApplicationContext().getAssets());
+        TinyWebServer.startServer("0.0.0.0",Constants.PORT_HTTP, "", getApplicationContext().getAssets());
     }
 
     public void stopWebServer()
