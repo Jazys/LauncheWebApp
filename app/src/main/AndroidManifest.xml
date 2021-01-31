@@ -50,6 +50,8 @@
         <service android:name=".WebSocketServerService" />
 
         <service android:name=".BluetoothService" />
+
+        <service android:name=".BLEService" />
     </application>
 
 </manifest>

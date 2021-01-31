@@ -48,4 +48,11 @@ public class WebSocketServerService extends Service {
         }
 
     }
+
+    @Override
+    public void onDestroy() {
+        stopWSS();
+        System.out.println("jj stopWSS");
+        super.onDestroy();
+    }
 }

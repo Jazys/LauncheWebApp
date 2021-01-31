@@ -16,6 +16,9 @@ class Constants {
     static final String ADRESSE_MAC_PC_JJ="2C:33:7A:26:40:A6";
     static final String NAME_BLUETOOTH="JULIENJ-HP";
 
+    //BLE
+    static final String MAC_BLUNO="C4:BE:84:1A:C2:07";
+
     // values have to be globally unique
     static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB";
     static final String INTENT_ACTION_DISCONNECT = BuildConfig.APPLICATION_ID + ".Disconnect";

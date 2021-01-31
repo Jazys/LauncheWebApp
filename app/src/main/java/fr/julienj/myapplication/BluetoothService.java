@@ -63,5 +63,11 @@ public class BluetoothService extends Service {
         bluetooth.disconnect();
 
     }
+
+    @Override
+    public void onDestroy() {
+        stopBluetoothServer();
+        super.onDestroy();
+    }
 }
 

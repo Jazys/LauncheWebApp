@@ -29,4 +29,10 @@ public class WebServerService extends Service {
     {
         TinyWebServer.stopServer();
     }
+
+    @Override
+    public void onDestroy() {
+        stopWebServer();
+        super.onDestroy();
+    }
 }
