@@ -88,6 +88,11 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
             serviceWSS = ((WebSocketServerService.WebSocketServerBinder) iBinder).getService();
             serviceWSS.startWSS();
         }
+        else if (iBinder.getClass().toString().contains("fr.julienj.myapplication.BluetoothService"))
+        {
+            serviceBluetooth = ((BluetoothService.BluetoothSocketSerie) iBinder).getService();
+            serviceBluetooth.startBluetoothServer();
+        }
     }
 
     @Override
@@ -121,7 +126,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
     @Override
     public void onSerialIoError(Exception e) {
-        disconnect();
+        disconnectUSBLS();
     }
 
     private enum UsbPermission { Unknown, Requested, Granted, Denied };
@@ -145,13 +150,26 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     private SerialService service;
     private WebServerService serviceWeb;
     private WebSocketServerService serviceWSS;
+    private BluetoothService serviceBluetooth;
     private TextView ipTextView;
 
     private boolean lsConnected=false;
 
+    private boolean isActivityRecreate=false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if(isActivityRecreate==false)
+        {
+            isActivityRecreate=true;
+            System.out.println("jj activite cree");
+        }
+        else
+        {
+            System.out.println("jj activite deja cree");
+        }
 
         //Pour avoir la fenetre en plein écran
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -162,6 +180,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         bindService(new Intent(this, SerialService.class), this, Context.BIND_AUTO_CREATE);
         bindService(new Intent(this, WebServerService.class), this, Context.BIND_AUTO_CREATE);
         bindService(new Intent(this, WebSocketServerService.class), this, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, BluetoothService.class), this, Context.BIND_AUTO_CREATE);
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -169,12 +188,12 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
                 if(intent.getAction().equals(Constants.INTENT_ACTION_GRANT_USB)) {
                     usbPermission = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
                             ? UsbPermission.Granted : UsbPermission.Denied;
-                    connect();
+                    connectUSBLS();
                 }else if(intent.getAction().equals(Constants.USB_ATTACHED)) {
-                    connect();
+                    connectUSBLS();
                 }else if(intent.getAction().equals(Constants.USB_DETTACHED))
                 {
-
+                    disconnectUSBLS();
                 }
             }
         };
@@ -219,6 +238,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
             }
         });
 
+        //Pour afficher l'addresse IP du téléphone
         ipTextView = (TextView)findViewById(R.id.textView);
 
         WifiManager wifiMan = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -229,94 +249,6 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         ipTextView.setText(ip);
 
         System.out.println("jj "+ip);
-
-
-        String[] peripheralAddresses = new String[]{"C4:BE:84:1A:C2:07"};
-// Build filters list
-        List<ScanFilter> filters = null;
-        if (peripheralAddresses != null) {
-            filters = new ArrayList<>();
-            for (String address : peripheralAddresses) {
-                ScanFilter filter = new ScanFilter.Builder()
-                        .setDeviceAddress(address)
-                        .build();
-                filters.add(filter);
-            }
-        }
-
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-        BluetoothLeScanner scanner = adapter.getBluetoothLeScanner();
-
-         ScanCallback scanCallback = new ScanCallback() {
-            @Override
-            public void onScanResult(int callbackType, ScanResult result) {
-                BluetoothDevice device = result.getDevice();
-                // ...do whatever you want with this found device
-                System.out.println("jj "+device.getAddress());
-            }
-
-            @Override
-            public void onBatchScanResults(List<ScanResult> results) {
-                // Ignore for now
-                System.out.println("jj fail2");
-            }
-
-            @Override
-            public void onScanFailed(int errorCode) {
-                // Ignore for now
-                System.out.println("jj fail1");
-            }
-        };
-
-        ScanSettings scanSettings = new ScanSettings.Builder()
-                .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-                .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-                .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
-                .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
-                .setReportDelay(0L)
-                .build();
-
-        if (scanner != null) {
-            scanner.startScan(filters, scanSettings, scanCallback);
-            Log.d("test", "scan started");
-            System.out.println("jj fail3");
-        }  else {
-            Log.e("test", "could not get scanner object");
-            System.out.println("jj fail4");
-        }
-
-
-        bluetooth = new Bluetooth(getApplicationContext());
-        //bluetooth.setCallbackOnUI(this);
-        bluetooth.setBluetoothCallback(bluetoothCallback);
-        bluetooth.setDiscoveryCallback(discoveryCallback);
-        bluetooth.onStart();
-        System.out.println("jj " +bluetooth.getPairedDevices());
-
-        bluetooth.connectToAddress("2C:33:7A:26:40:A6");
-
-
-        bluetooth.startScanning();
-
-        bluetooth.setDeviceCallback(new DeviceCallback() {
-            @Override public void onDeviceConnected(BluetoothDevice device) {}
-            @Override public void onDeviceDisconnected(BluetoothDevice device, String message) {}
-            @Override public void onMessage(byte[] message) {
-                String mess="";
-                for(int i=0 ; i<message.length; i++){
-                    mess+= String.valueOf((char)message[i]);
-                }
-                System.out.println("jj "+mess);
-                bluetooth.send(mess+"\r\n");
-            }
-
-            @Override
-            public void onError(int errorCode) {
-
-            }
-
-            @Override public void onConnectError(BluetoothDevice device, String message) {}
-        });
 
 
         Button startApp = (Button) findViewById(R.id.buttonLaunch);
@@ -368,40 +300,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
      //   central.scanForPeripherals();
         System.out.println("jj test"+peripheral.getName()+": "+peripheral.readRemoteRssi()+ ":"+peripheral.getAddress());
-
         central.autoConnectPeripheral(peripheral, peripheralCallback);
-
-     //   central.scanForPeripherals();
-        //UUID test= new UUID()
-        //BluetoothGattCharacteristic characteristic= new BluetoothGattCharacteristic()
-        //peripheral.
-        //peripheral.getAddress()
-
-        UUID BLOODPRESSURE_SERVICE_UUID = UUID.fromString("0000dfb2-0000-1000-8000-00805f9b34fb");
-        System.out.println("jj test"+peripheral.getServices());
-        peripheral.getServices();
-
-        BluetoothManager mBluetoothManager;
-        BluetoothAdapter mBluetoothAdapter;
-         //mBluetoothManager.getAdapter().getRemoteDevice();
-        // UUID DIS_SERVICE_UUID = UUID.fromString("2A00");
-
-        // Define blood pressure service UUID
-
-
-// Scan for peripherals with a certain service UUID
-        central.scanForPeripheralsWithServices(new UUID[]{BLOODPRESSURE_SERVICE_UUID});
-
-
-
-        //peripheral.readCharacteristic()
-
-// Define bloo
-
-
-
-
-
 
 
     }
@@ -425,7 +324,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     @Override
     public void onDestroy() {
         if (lsConnected != false)
-            disconnect();
+            disconnectUSBLS();
         getApplicationContext().stopService(new Intent(this, SerialService.class));
         super.onDestroy();
     }
@@ -542,83 +441,14 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         }
     };
 
-
-    private BluetoothCallback bluetoothCallback = new BluetoothCallback() {
-        @Override
-        public void onBluetoothTurningOn() {
-        }
-
-        @Override
-        public void onBluetoothOn() {
-            System.out.println("jj 2");
-            pairedDevices = bluetooth.getPairedDevices();
-            for(BluetoothDevice device : pairedDevices){
-                System.out.println("jj 2"+device.getAddress()+" : "+device.getName());
-            }
-        }
-
-        @Override
-        public void onBluetoothTurningOff() {
-            //scanButton.setEnabled(false);
-        }
-
-        @Override
-        public void onBluetoothOff() {
-        }
-
-        @Override
-        public void onUserDeniedActivation() {
-
-        }
-    };
-
-    private DiscoveryCallback discoveryCallback = new DiscoveryCallback() {
-        @Override
-        public void onDiscoveryStarted() {
-            System.out.println("jj 1");
-            scannedDevices = new ArrayList<>();
-            scanning = true;
-        }
-
-        @Override
-        public void onDiscoveryFinished() {
-            System.out.println("jj 3");
-            scanning = false;
-        }
-
-        @Override
-        public void onDeviceFound(BluetoothDevice device) {
-            System.out.println("jj 4" +device.getAddress()+" : "+device.getName());
-            scannedDevices.add(device);
-            scanListAdapter.add(device.getAddress()+" : "+device.getName());
-        }
-
-        @Override
-        public void onDevicePaired(BluetoothDevice device) {
-
-        }
-
-        @Override
-        public void onDeviceUnpaired(BluetoothDevice device) {
-
-        }
-
-        @Override
-        public void onError(int errorCode) {
-
-        }
-    };
-
-
-
-    public void connect()
+    public void connectUSBLS()
     {
 
         UsbManager manager = (UsbManager) getApplicationContext().getSystemService(Context.USB_SERVICE);
         UsbDevice usbXiao=null;
         for(UsbDevice v : manager.getDeviceList().values())
         {
-            if(v.getDeviceId() == 2002)
+            if(v.getDeviceId() == Constants.DEVICE_ID_XIAO)
             {
                 usbXiao=v;
                 System.out.println("jj usb usb");
@@ -649,7 +479,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
         try {
             usbSerialPort.open(usbConnection);
-            usbSerialPort.setParameters(19200, 8, 1, UsbSerialPort.PARITY_NONE);
+            usbSerialPort.setParameters(Constants.BAUD_RATE_XIAO, 8, 1, UsbSerialPort.PARITY_NONE);
 
             SerialSocket socket = new SerialSocket(getApplicationContext(), usbConnection, usbSerialPort);
             service.connect(socket);
@@ -662,11 +492,11 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
         } catch (Exception e) {
             System.out.println("jj "+e);
-            disconnect();
+            disconnectUSBLS();
         }
     }
 
-    private void disconnect() {
+    private void disconnectUSBLS() {
         lsConnected=false;
         if(usbIoManager != null)
             usbIoManager.stop();

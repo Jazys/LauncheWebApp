@@ -8,6 +8,14 @@ class Constants {
     //port WSS
     static final int PORT_WS=9091;
 
+    //USB
+    static final int DEVICE_ID_XIAO=2002;
+    static final int BAUD_RATE_XIAO=19200;
+
+    //BLUETOOTH 2.0
+    static final String ADRESSE_MAC_PC_JJ="2C:33:7A:26:40:A6";
+    static final String NAME_BLUETOOTH="JULIENJ-HP";
+
     // values have to be globally unique
     static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB";
     static final String INTENT_ACTION_DISCONNECT = BuildConfig.APPLICATION_ID + ".Disconnect";
