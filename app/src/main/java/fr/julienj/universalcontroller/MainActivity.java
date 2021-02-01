@@ -141,9 +141,16 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     private WebSocketServerService serviceWSS;
     private BluetoothService serviceBluetooth;
     private  BLEService serviceBLE;
+
+    private ServiceConnection serviceSerailSC;
+    private ServiceConnection serviceWebSC;
+    private ServiceConnection serviceWSSSC;
+    private ServiceConnection serviceBluetoothSC;
+    private  ServiceConnection serviceBLESC;
     private TextView ipTextView;
     private TextView lastDataSerial;
     private Handler handler = new Handler();
+    private SerialListener serialListenerUsb;
 
     private boolean lsConnected=false;
 
@@ -153,10 +160,10 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        CreateServiceConnexion();
         if(SingletonApp.getInstance().isActivityRecreate==false)
         {
             SingletonApp.getInstance().isActivityRecreate=true;
-
             Log.i(TAG, "onCreate");
         }
         else
@@ -164,17 +171,11 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
             Log.i(TAG, "onCreate 2 fois");
         }
 
-        //Pour avoir la fenetre en plein écran
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        setContentView(R.layout.activity_main);
 
         //Pour démarrer le service liée à la connexion en USB
-        bindService(new Intent(this, SerialService.class), this, Context.BIND_AUTO_CREATE);
-        bindService(new Intent(this, WebServerService.class), this, Context.BIND_AUTO_CREATE);
-        bindService(new Intent(this, WebSocketServerService.class), this, Context.BIND_AUTO_CREATE);
-        bindService(new Intent(this, BluetoothService.class), this, Context.BIND_AUTO_CREATE);
-        bindService(new Intent(this, BLEService.class), this, Context.BIND_AUTO_CREATE);
+        //bindService(new Intent(this, SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
+
+
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -184,16 +185,23 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
                             ? UsbPermission.Granted : UsbPermission.Denied;
                     connectUSBLS();
                 }else if(intent.getAction().equals(Constants.USB_ATTACHED)) {
-                    connectUSBLS();
+                    //bindService(new Intent(getApplication(), SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
                 }else if(intent.getAction().equals(Constants.USB_DETTACHED))
                 {
-                    disconnectUSBLS();
+                    //disconnectUSBLS();
                 }
             }
         };
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.INTENT_ACTION_GRANT_USB));
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.USB_ATTACHED));
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.USB_DETTACHED));
+
+        //Pour avoir la fenetre en plein écran
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        setContentView(R.layout.activity_main);
+
+
 
 
 
@@ -216,6 +224,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         startServeur.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                bindService(new Intent(getApplication(), WebServerService.class), serviceWebSC, Context.BIND_AUTO_CREATE);
+                bindService(new Intent(getApplication(), WebSocketServerService.class), serviceWSSSC, Context.BIND_AUTO_CREATE);
             }
         });
 
@@ -223,6 +233,10 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         stopServer.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                unbindService(serviceWebSC);
+                unbindService(serviceWSSSC);
+                getApplicationContext().stopService(new Intent(getApplication(), WebServerService.class));
+                getApplicationContext().stopService(new Intent(getApplication(), WebSocketServerService.class));
             }
         });
 
@@ -239,6 +253,28 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         Log.i(TAG, "ip "+ip);
 
         lastDataSerial = (TextView)findViewById(R.id.SerialText);
+        lastDataSerial.setText("Data :");
+
+        Button startUSBSerie=(Button) findViewById(R.id.buttonStartUSBSerie);
+        startUSBSerie.setOnClickListener( new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                bindService(new Intent(getApplication(), SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
+
+            }
+        });
+
+        Button stopUSBSerie=(Button) findViewById(R.id.buttonStopUSBSerie);
+        stopUSBSerie.setOnClickListener( new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                unbindService(serviceSerailSC);
+                getApplicationContext().stopService(new Intent(getApplication(), SerialService.class));
+
+            }
+        });
 
 
         Button startApp = (Button) findViewById(R.id.buttonLaunch);
@@ -256,6 +292,26 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
                     // Chrome is probably not installed
                 }
 
+            }
+        });
+
+        Button startBluetooth = (Button) findViewById(R.id.buttonLaunchBluetooth);
+        startBluetooth.setOnClickListener( new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                bindService(new Intent(getApplication(), BluetoothService.class), serviceBluetoothSC, Context.BIND_AUTO_CREATE);
+                bindService(new Intent(getApplication(), BLEService.class), serviceBLESC, Context.BIND_AUTO_CREATE);
+            }
+        });
+
+        Button stopBluetooth = (Button) findViewById(R.id.buttonStopBluetooth);
+        stopBluetooth.setOnClickListener( new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                unbindService(serviceBluetoothSC);
+                unbindService(serviceBLESC);
+                getApplicationContext().stopService(new Intent(getApplication(), BluetoothService.class));
+                getApplicationContext().stopService(new Intent(getApplication(), BLEService.class));
             }
         });
     }
@@ -283,6 +339,13 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         Log.i(TAG, "onDestroy");
         if (lsConnected != false)
             disconnectUSBLS();
+
+        /*unbindService(serviceSerailSC);
+
+        unbindService(serviceWebSC);
+        unbindService(serviceWSSSC);
+        unbindService(serviceBluetoothSC);
+        unbindService(serviceBLESC);*/
         getApplicationContext().stopService(new Intent(this, SerialService.class));
         getApplicationContext().stopService(new Intent(this, WebServerService.class));
         getApplicationContext().stopService(new Intent(this, WebSocketServerService.class));
@@ -303,6 +366,129 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     public void onResume() {
         super.onResume();
         Log.i(TAG, "onResume");
+    }
+
+    private void CreateServiceConnexion()
+    {
+        serviceSerailSC=new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                Log.i(TAG, "Service démarré SerialService");
+                service = ((SerialService.SerialBinder) iBinder).getService();
+                service.attach(serialListenerUsb);
+                connectUSBLS();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                service.detach();
+                service.disconnect();
+                disconnectUSBLS();
+
+            }
+        };
+
+        serviceWebSC =new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                Log.i(TAG, "Service démarré WebServerService");
+                serviceWeb = ((WebServerService.WebServerBinder) iBinder).getService();
+                serviceWeb.startWebServer();
+
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                serviceWeb.stopWebServer();
+            }
+        };
+
+        serviceWSSSC=new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                Log.i(TAG, "Service démarré WebSocketServerService");
+                serviceWSS = ((WebSocketServerService.WebSocketServerBinder) iBinder).getService();
+                serviceWSS.startWSS();
+
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                serviceWSS.startWSS();
+            }
+        };
+
+       serviceBluetoothSC= new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                Log.i(TAG, "Service démarré BluetoothService");
+                serviceBluetooth = ((BluetoothService.BluetoothSocketSerie) iBinder).getService();
+                serviceBluetooth.startBluetoothServer();
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                serviceBluetooth.stopBluetoothServer();
+            }
+        };
+
+        serviceBLESC= new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+                Log.i(TAG, "Service démarré serviceBLE");
+                serviceBLE = ((BLEService.BLEGatt) iBinder).getService();
+                serviceBLE.startConnexion();
+
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName componentName) {
+                serviceBLE.stopBluetoothServer();
+            }
+        };
+
+        serialListenerUsb= new SerialListener() {
+            @Override
+            public void onSerialConnect() {
+
+            }
+
+            @Override
+            public void onSerialConnectError(Exception e) {
+
+            }
+
+            @Override
+            public void onSerialRead(byte[] data) {
+                String mess="";
+                for(int i=0 ; i<data.length; i++){
+                    mess+= String.valueOf((char)data[i]);
+                }
+                Log.i(TAG, "Serial USB "+mess);
+
+                final String messView=mess;
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (lastDataSerial != null && messView.length()>2)
+                        {
+                            lastDataSerial.setText("Last data "+messView);
+                            lastDataSerial.invalidate();
+                            lastDataSerial.requestLayout();
+                            Log.i(TAG, "Serial USB 2");
+                        }
+
+                    }});
+            }
+
+            @Override
+            public void onSerialIoError(Exception e) {
+
+            }
+        };
+
+
     }
 
     public void connectUSBLS()

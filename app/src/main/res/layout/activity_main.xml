@@ -36,6 +36,22 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <Button
+            android:id="@+id/buttonStartUSBSerie"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Demarrer USB Serie"
+            app:layout_constraintBottom_toBottomOf="parent"
+            />
+
+        <Button
+            android:id="@+id/buttonStopUSBSerie"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stopper USB Série"
+            app:layout_constraintBottom_toBottomOf="parent"
+            />
+
+        <Button
             android:id="@+id/buttonStartServer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -75,10 +91,9 @@
             android:id="@+id/SerialText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=""
+            android:text="Test"
             android:layout_columnSpan="2"
-            tools:layout_editor_absoluteX="176dp"
-            tools:layout_editor_absoluteY="483dp" />
+             />
 
     </GridLayout>
 
