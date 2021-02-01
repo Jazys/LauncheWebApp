@@ -62,7 +62,8 @@ public class BluetoothService extends Service {
     }
 
     public void stopBluetoothServer() {
-        bluetooth.disconnect();
+        if(bluetooth!=null && bluetooth.isConnected())
+            bluetooth.disconnect();
 
     }
 

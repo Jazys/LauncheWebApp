@@ -19,6 +19,7 @@ import android.net.Uri;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -43,6 +44,9 @@ import fr.julienj.universalcontroller.services.WebServerService;
 import fr.julienj.universalcontroller.services.WebSocketServerService;
 import fr.julienj.universalcontroller.utils.CustomProber;
 import fr.julienj.universalcontroller.utils.HexDump;
+
+//https://abhiandroid.com/ui/gridview
+//http://javamind-fr.blogspot.com/2013/05/gridlayout-pour-creer-des-tableaux-ou.html
 
 public class MainActivity extends AppCompatActivity  implements ServiceConnection, SerialListener {
 
@@ -103,6 +107,18 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
             mess+= String.valueOf((char)data[i]);
         }
         Log.i(TAG, "Serial USB "+mess);
+
+        final String messView=mess;
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if(lastDataSerial!=null)
+                    lastDataSerial.setText("Last data "+messView);
+            }
+        });
+
+
     }
 
     @Override
@@ -126,6 +142,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     private BluetoothService serviceBluetooth;
     private  BLEService serviceBLE;
     private TextView ipTextView;
+    private TextView lastDataSerial;
+    private Handler handler = new Handler();
 
     private boolean lsConnected=false;
 
@@ -138,6 +156,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         if(SingletonApp.getInstance().isActivityRecreate==false)
         {
             SingletonApp.getInstance().isActivityRecreate=true;
+
             Log.i(TAG, "onCreate");
         }
         else
@@ -175,6 +194,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.INTENT_ACTION_GRANT_USB));
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.USB_ATTACHED));
         registerReceiver(broadcastReceiver, new IntentFilter(Constants.USB_DETTACHED));
+
 
 
         //Pour demander les permissions
@@ -217,6 +237,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         ipTextView.setText(ip);
 
         Log.i(TAG, "ip "+ip);
+
+        lastDataSerial = (TextView)findViewById(R.id.SerialText);
 
 
         Button startApp = (Button) findViewById(R.id.buttonLaunch);
@@ -266,6 +288,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         getApplicationContext().stopService(new Intent(this, WebSocketServerService.class));
         getApplicationContext().stopService(new Intent(this, BluetoothService.class));
         getApplicationContext().stopService(new Intent(this, BLEService.class));
+
+        unregisterReceiver(broadcastReceiver);
         super.onDestroy();
     }
 

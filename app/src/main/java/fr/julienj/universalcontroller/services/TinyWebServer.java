@@ -566,6 +566,8 @@ public class TinyWebServer extends Thread {
             Thread t = new TinyWebServer(SERVER_IP, SERVER_PORT, am);
             t.start();
 
+            Log.i(TAG,"Web Server started!");
+
 
         } catch (IOException e) {
             e.printStackTrace();
