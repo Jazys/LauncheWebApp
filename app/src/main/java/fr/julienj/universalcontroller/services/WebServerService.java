@@ -1,16 +1,20 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.services;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
+
+import fr.julienj.universalcontroller.Constants;
 
 public class WebServerService extends Service {
 
+    private static final String TAG = "WebServerService";
     private final IBinder mBinder = new WebServerBinder();
 
     public class WebServerBinder extends Binder {
-        WebServerService getService() {
+        public WebServerService getService() {
             return WebServerService.this;
         }
     }
@@ -22,7 +26,8 @@ public class WebServerService extends Service {
 
     public void startWebServer()
     {
-        TinyWebServer.startServer("0.0.0.0",Constants.PORT_HTTP, "", getApplicationContext().getAssets());
+        TinyWebServer.startServer("0.0.0.0", Constants.PORT_HTTP, "", getApplicationContext().getAssets());
+        Log.i(TAG, "startWebServer");
     }
 
     public void stopWebServer()

@@ -1,4 +1,4 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller;
 
 import android.Manifest;
 import android.app.PendingIntent;
@@ -24,6 +24,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -33,33 +34,48 @@ import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import java.io.IOException;
 
+import fr.julienj.universalcontroller.interfaceclass.SerialListener;
+import fr.julienj.universalcontroller.services.BLEService;
+import fr.julienj.universalcontroller.services.BluetoothService;
+import fr.julienj.universalcontroller.services.SerialService;
+import fr.julienj.universalcontroller.services.SerialSocket;
+import fr.julienj.universalcontroller.services.WebServerService;
+import fr.julienj.universalcontroller.services.WebSocketServerService;
+import fr.julienj.universalcontroller.utils.CustomProber;
+import fr.julienj.universalcontroller.utils.HexDump;
+
 public class MainActivity extends AppCompatActivity  implements ServiceConnection, SerialListener {
 
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
 
-        if( iBinder.getClass().toString().contains("fr.julienj.myapplication.SerialService"))
+        if( iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.SerialService"))
         {
+            Log.i(TAG, "Service démarré SerialService");
             service = ((SerialService.SerialBinder) iBinder).getService();
             service.attach(this);
         }
-        else if (iBinder.getClass().toString().contains("fr.julienj.myapplication.WebServerService"))
+        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.WebServerService"))
         {
+            Log.i(TAG, "Service démarré WebServerService");
             serviceWeb = ((WebServerService.WebServerBinder) iBinder).getService();
             serviceWeb.startWebServer();
         }
-        else if (iBinder.getClass().toString().contains("fr.julienj.myapplication.WebSocketServerService"))
+        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.WebSocketServerService"))
         {
+            Log.i(TAG, "Service démarré WebSocketServerService");
             serviceWSS = ((WebSocketServerService.WebSocketServerBinder) iBinder).getService();
             serviceWSS.startWSS();
         }
-        else if (iBinder.getClass().toString().contains("fr.julienj.myapplication.BluetoothService"))
+        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.BluetoothService"))
         {
+            Log.i(TAG, "Service démarré BluetoothService");
             serviceBluetooth = ((BluetoothService.BluetoothSocketSerie) iBinder).getService();
             serviceBluetooth.startBluetoothServer();
         }
-        else if (iBinder.getClass().toString().contains("fr.julienj.myapplication.BLEService"))
+        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.BLEService"))
         {
+            Log.i(TAG, "Service démarré serviceBLE");
             serviceBLE = ((BLEService.BLEGatt) iBinder).getService();
             serviceBLE.startConnexion();
         }
@@ -82,16 +98,11 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
     @Override
     public void onSerialRead(byte[] data) {
-        System.out.println("jj size "+data.length);
-        System.out.println("jj +"+HexDump.dumpHexString(data));
-
         String mess="";
         for(int i=0 ; i<data.length; i++){
             mess+= String.valueOf((char)data[i]);
         }
-        System.out.println("jj "+mess);
-
-
+        Log.i(TAG, "Serial USB "+mess);
     }
 
     @Override
@@ -99,6 +110,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         //disconnectUSBLS();
     }
 
+    private static final String TAG = "Main";
     private enum UsbPermission { Unknown, Requested, Granted, Denied };
     private UsbPermission usbPermission = UsbPermission.Unknown;
     private static final String url = "http://127.0.0.1:9000/index.html";
@@ -123,14 +135,14 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if(isActivityRecreate==false)
+        if(SingletonApp.getInstance().isActivityRecreate==false)
         {
-            isActivityRecreate=true;
-            System.out.println("jj activite cree");
+            SingletonApp.getInstance().isActivityRecreate=true;
+            Log.i(TAG, "onCreate");
         }
         else
         {
-            System.out.println("jj activite deja cree");
+            Log.i(TAG, "onCreate 2 fois");
         }
 
         //Pour avoir la fenetre en plein écran
@@ -204,7 +216,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
         ipTextView.setText(ip);
 
-        System.out.println("jj "+ip);
+        Log.i(TAG, "ip "+ip);
 
 
         Button startApp = (Button) findViewById(R.id.buttonLaunch);
@@ -230,7 +242,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     @Override
     public void onStart() {
         super.onStart();
-        System.out.println("jj onStart");
+        Log.i(TAG, "onStart");
         if(service != null)
             service.attach(this);
         else
@@ -239,14 +251,14 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
     @Override
     public void onStop() {
-        System.out.println("jj onStop");
+        Log.i(TAG, "onStop");
         if(service != null)
             service.detach();
         super.onStop();
     }
     @Override
     public void onDestroy() {
-        System.out.println("jj onDestroy");
+        Log.i(TAG, "onDestroy");
         if (lsConnected != false)
             disconnectUSBLS();
         getApplicationContext().stopService(new Intent(this, SerialService.class));
@@ -260,13 +272,13 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     @Override
     public void onPause() {
         super.onPause();
-        System.out.println("jj onPause");
+        Log.i(TAG, "onPause");
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        System.out.println("jj onResume");
+        Log.i(TAG, "onResume");
     }
 
     public void connectUSBLS()
@@ -279,7 +291,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
             if(v.getDeviceId() == Constants.DEVICE_ID_XIAO)
             {
                 usbXiao=v;
-                System.out.println("jj usb usb");
+                Log.i(TAG, "Xiao trouvé");
             }
         }
 
@@ -299,9 +311,9 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         }
         if(usbConnection == null) {
             if (!manager.hasPermission(driver.getDevice()))
-                System.out.println("jj usb conn test");
+                Log.i(TAG, "Pas de permission pour l'USB");
             else
-                System.out.println("jj usb notconntest");
+                Log.i(TAG, "Erreur sur l'USB");
             return;
         }
 
@@ -311,15 +323,14 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             SerialSocket socket = new SerialSocket(getApplicationContext(), usbConnection, usbSerialPort);
             service.connect(socket);
-            // usb connect is not asynchronous. connect-success and connect-error are returned immediately from socket.connect
-            // for consistency to bluetooth/bluetooth-LE app use same SerialListener and SerialService classes
+
             onSerialConnect();
 
-            System.out.println("jj right");
+            Log.i(TAG, "Liaison série USB ouverte sur XIAO");
             lsConnected=true;
 
         } catch (Exception e) {
-            System.out.println("jj "+e);
+            Log.w(TAG, "Impossible d'ouvrir la liaison série avec le XIAO");
             disconnectUSBLS();
         }
     }

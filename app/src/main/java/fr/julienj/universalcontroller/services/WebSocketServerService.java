@@ -1,20 +1,25 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.services;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 
+import fr.julienj.universalcontroller.Constants;
+
 public class WebSocketServerService extends Service {
+
+    private static final String TAG = "WebSocketServer";
 
     private final IBinder mBinder = new WebSocketServerBinder();
     private WebSocketServer socketWSS = null;
 
     public class WebSocketServerBinder extends Binder {
-        WebSocketServerService getService() {
+        public WebSocketServerService getService() {
             return WebSocketServerService.this;
         }
     }
@@ -30,6 +35,7 @@ public class WebSocketServerService extends Service {
         try {
             socketWSS = new WebSocketServer(Constants.PORT_WS);
             socketWSS.start();
+            Log.i(TAG,"startWSS");
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
@@ -52,7 +58,7 @@ public class WebSocketServerService extends Service {
     @Override
     public void onDestroy() {
         stopWSS();
-        System.out.println("jj stopWSS");
+        Log.i(TAG,"stop WSS");
         super.onDestroy();
     }
 }

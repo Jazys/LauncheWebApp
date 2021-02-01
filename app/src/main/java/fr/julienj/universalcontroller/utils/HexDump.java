@@ -1,4 +1,4 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.utils;
 
 import java.security.InvalidParameterException;
 

@@ -1,4 +1,4 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.services;
 
 /*
  * Copyright (c) 2010-2020 Nathan Rajlich
@@ -25,15 +25,13 @@ package fr.julienj.myapplication;
  *  OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import android.util.Log;
+
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.drafts.Draft;
@@ -44,6 +42,8 @@ import org.java_websocket.handshake.ClientHandshake;
  * A simple WebSocketServer implementation. Keeps track of a "chatroom".
  */
 public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
+
+    private static final String TAG = "WebSocketServer";
 
     HashMap<String,WebSocket> client= new HashMap<String, WebSocket>();
 
@@ -68,7 +68,7 @@ public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
         conn.send("Welcome to the server!"); //This method sends a message to the new client
         broadcast("new connection: " + handshake
                 .getResourceDescriptor()); //This method sends a message to all clients connected
-        System.out.println("jj "+
+        Log.i(TAG,"onOpen "+
                 conn.getRemoteSocketAddress().getAddress().getHostAddress() + " entered the room!" + conn.getRemoteSocketAddress().getPort());
     }
 
@@ -79,19 +79,14 @@ public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
             client.remove(conn.getRemoteSocketAddress().getAddress().getHostAddress()+":"+conn.getRemoteSocketAddress().getPort());
 
         broadcast(conn + " has left the room!");
-        System.out.println("jj "+conn + " has left the room!");
+        Log.i(TAG,"onClose "+conn + " has left the room!");
+
     }
 
     @Override
     public void onMessage(WebSocket conn, String message) {
         broadcast(message);
-        System.out.println("jj "+conn + ": " + message);
-    }
-
-    @Override
-    public void onMessage(WebSocket conn, ByteBuffer message) {
-        broadcast(message.array());
-        System.out.println("jj "+conn + ": " + message);
+        Log.i(TAG,"onMessage "+conn + ": " + message);
     }
 
     @Override
@@ -104,7 +99,7 @@ public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
 
     @Override
     public void onStart() {
-        System.out.println("jj WSS  Server started!");
+        Log.i(TAG,"WSS  Server started!");
         setConnectionLostTimeout(0);
         setConnectionLostTimeout(100);
     }

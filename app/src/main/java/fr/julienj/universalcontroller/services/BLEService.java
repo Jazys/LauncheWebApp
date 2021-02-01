@@ -1,7 +1,6 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.services;
 
 import android.app.Service;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.le.ScanResult;
@@ -11,6 +10,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.ParcelUuid;
+import android.util.Log;
 
 import com.welie.blessed.BluetoothBytesParser;
 import com.welie.blessed.BluetoothCentralManager;
@@ -24,14 +24,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import me.aflak.bluetooth.Bluetooth;
-import me.aflak.bluetooth.interfaces.DeviceCallback;
+import fr.julienj.universalcontroller.Constants;
 
 import static android.bluetooth.BluetoothGatt.CONNECTION_PRIORITY_HIGH;
 
 public class BLEService extends Service {
 
     private final IBinder mBinder = new BLEGatt();
+    private static final String TAG = "BLEService";
 
     private BluetoothCentralManager central;
     private BluetoothPeripheral peripheral;
@@ -46,18 +46,18 @@ public class BLEService extends Service {
 
             peripheral.requestConnectionPriority(CONNECTION_PRIORITY_HIGH);
 
-            System.out.println("jj test1 "+peripheral.getName());
-            System.out.println("jj test1 "+peripheral.getServices());
+            Log.i(TAG, "onServicesDiscovered "+peripheral.getName());
+            Log.i(TAG, "onServicesDiscovered "+peripheral.getServices());
 
             for (int i=0;i<peripheral.getServices().size();i++)
             {
                 BluetoothGattService ble= peripheral.getServices().get(i);
-                System.out.println("jj -- "+ble.getUuid());
+                Log.d(TAG, "onServicesDiscovered service"+ble.getUuid());
 
                 for(int z=0;z<ble.getCharacteristics().size();z++)
                 {
                     BluetoothGattCharacteristic characteristic=ble.getCharacteristics().get(z);
-                    System.out.println("jj car "+characteristic.getUuid().toString()+ ": "+characteristic.getWriteType());
+                    Log.d(TAG, "onServicesDiscovered charactristiqc "+characteristic.getUuid().toString()+ ": "+characteristic.getWriteType());
                     if(characteristic.getUuid().toString().equalsIgnoreCase("0000dfb1-0000-1000-8000-00805f9b34fb"))
                     {
                         aCharacteristic=characteristic;
@@ -100,13 +100,13 @@ public class BLEService extends Service {
 
         @Override
         public void onNotificationStateUpdate(BluetoothPeripheral peripheral, BluetoothGattCharacteristic characteristic, GattStatus status) {
-            System.out.println("jj test2");
+            Log.i(TAG, "onNotificationStateUpdate");
 
         }
 
         @Override
         public void onCharacteristicWrite(BluetoothPeripheral peripheral, byte[] value, BluetoothGattCharacteristic characteristic, GattStatus status) {
-            System.out.println("jj test3");
+            Log.i(TAG, "onCharacteristicWrite");
 
         }
 
@@ -118,7 +118,8 @@ public class BLEService extends Service {
             for(int i=0 ; i<value.length; i++){
                 mess+= String.valueOf((char)value[i]);
             }
-            System.out.println("jj test4 "+mess);
+
+            Log.i(TAG, "onCharacteristicUpdate "+mess);
             System.out.println("jj test4 "+parser.getStringValue(BluetoothBytesParser.FORMAT_SINT8));
 
 
@@ -126,31 +127,16 @@ public class BLEService extends Service {
 
         @Override
         public void onMtuChanged(BluetoothPeripheral peripheral, int mtu, GattStatus status) {
-            System.out.println("jj test5");
+            Log.i(TAG, "onMtuChanged");
             peripheral.setNotify(UUID.fromString("0000dfb0-0000-1000-8000-00805f9b34fb"), UUID.fromString("0000dfb2-0000-1000-8000-00805f9b34fb"),true);
 
-
         }
 
-        private void sendMeasurement(Intent intent, BluetoothPeripheral peripheral ) {
-            System.out.println("jj test6");
-
-        }
-
-        private void writeContourClock(BluetoothPeripheral peripheral) {
-            System.out.println("jj test7");
-
-        }
-
-        private void writeGetAllGlucoseMeasurements(BluetoothPeripheral peripheral) {
-            System.out.println("jj test8");
-
-        }
     };
 
 
     public class BLEGatt extends Binder {
-        BLEService getService() {
+        public BLEService getService() {
             return BLEService.this;
         }
     }
@@ -194,7 +180,7 @@ public class BLEService extends Service {
 
 
         //   central.scanForPeripherals();
-        System.out.println("jj test"+peripheral.getName()+": "+peripheral.readRemoteRssi()+ ":"+peripheral.getAddress());
+        Log.i(TAG, "Connexion BLE "+peripheral.getName()+": "+peripheral.readRemoteRssi()+ ":"+peripheral.getAddress());
         central.autoConnectPeripheral(peripheral, peripheralCallback);
 
 

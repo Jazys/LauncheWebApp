@@ -1,4 +1,4 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.services;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDeviceConnection;
+import android.util.Log;
 
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
@@ -14,7 +15,12 @@ import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.concurrent.Executors;
 
+import fr.julienj.universalcontroller.BuildConfig;
+import fr.julienj.universalcontroller.interfaceclass.SerialListener;
+
 public class SerialSocket implements SerialInputOutputManager.Listener {
+
+    private static final String TAG = "SerialSocket";
 
     private static final int WRITE_WAIT_MILLIS = 2000; // 0 blocked infinitely on unprogrammed arduino
 
@@ -26,7 +32,7 @@ public class SerialSocket implements SerialInputOutputManager.Listener {
     private UsbSerialPort serialPort;
     private SerialInputOutputManager ioManager;
 
-    SerialSocket(Context context, UsbDeviceConnection connection, UsbSerialPort serialPort) {
+    public SerialSocket(Context context, UsbDeviceConnection connection, UsbSerialPort serialPort) {
         if(context instanceof Activity)
             throw new InvalidParameterException("expected non UI context");
         this.context = context;
@@ -91,7 +97,7 @@ public class SerialSocket implements SerialInputOutputManager.Listener {
     @Override
     public void onNewData(byte[] data) {
         if(listener != null) {
-            System.out.println("jj new data");
+            Log.d(TAG,"Reception Serial Socket");
             listener.onSerialRead(data);
         }
     }

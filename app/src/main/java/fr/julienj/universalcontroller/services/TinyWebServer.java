@@ -1,4 +1,4 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.services;
 
 /*
  * The MIT License
@@ -25,6 +25,7 @@ package fr.julienj.myapplication;
  */
 
 import android.content.res.AssetManager;
+import android.util.Log;
 
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
@@ -59,6 +60,7 @@ public class TinyWebServer extends Thread {
     /**
      * @param args the command line arguments
      */
+    private static final String TAG = "TinyWebServer";
     private static ServerSocket serverSocket;
     private final Map<String, String> lowerCaseHeader = new HashMap<>();
 
@@ -291,8 +293,7 @@ public class TinyWebServer extends Thread {
                 constructHeader(out, data.length() + "", data);
                 break;
             default:
-
-                System.out.println("jj url location -> " + location);
+                Log.i(TAG,"processLocation "+location);
                 URL geturl = getDecodedUrl("http://localhost" + location);
                 String[] dirPath = geturl.getPath().split("/");
                 String fullFilePath=geturl.getPath();
@@ -577,7 +578,7 @@ public class TinyWebServer extends Thread {
             try{
                 isStart=false;
                 serverSocket.close();
-                System.out.println("Server stopped running !");
+                Log.i(TAG, "Server stopped running");
             }catch(IOException er){
                 er.printStackTrace();
             }

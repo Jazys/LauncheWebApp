@@ -1,4 +1,4 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

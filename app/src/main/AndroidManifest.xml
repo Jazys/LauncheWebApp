@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="fr.julienj.myapplication">
+    package="fr.julienj.universalcontroller">
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -18,7 +18,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity" android:directBootAware="true">
+        <activity android:name="fr.julienj.universalcontroller.MainActivity" android:directBootAware="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -34,7 +34,7 @@
                 android:resource="@xml/device_filter" />
         </activity>
 
-        <receiver android:name="UsbReceiver" >
+        <receiver android:name="fr.julienj.universalcontroller.UsbReceiver" >
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
             </intent-filter>
@@ -43,15 +43,15 @@
                 android:resource="@xml/device_filter" />
         </receiver>
 
-        <service android:name=".SerialService" />
+        <service android:name="fr.julienj.universalcontroller.services.SerialService" />
 
-        <service android:name=".WebServerService" />
+        <service android:name="fr.julienj.universalcontroller.services.WebServerService" />
 
-        <service android:name=".WebSocketServerService" />
+        <service android:name="fr.julienj.universalcontroller.services.WebSocketServerService" />
 
-        <service android:name=".BluetoothService" />
+        <service android:name="fr.julienj.universalcontroller.services.BluetoothService" />
 
-        <service android:name=".BLEService" />
+        <service android:name="fr.julienj.universalcontroller.services.BLEService" />
     </application>
 
 </manifest>

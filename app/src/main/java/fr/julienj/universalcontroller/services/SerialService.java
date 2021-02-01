@@ -1,4 +1,4 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.services;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -18,14 +18,20 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import fr.julienj.universalcontroller.Constants;
+import fr.julienj.universalcontroller.R;
+import fr.julienj.universalcontroller.interfaceclass.SerialListener;
+
 /**
  * create notification and queue serial data while activity is not in the foreground
  * use listener chain: SerialSocket -> SerialService -> UI fragment
  */
 public class SerialService extends Service implements SerialListener {
 
-    class SerialBinder extends Binder {
-        SerialService getService() { return SerialService.this; }
+    private static final String TAG = "SerialService";
+
+    public class SerialBinder extends Binder {
+        public SerialService getService() { return SerialService.this; }
     }
 
     private enum QueueType {Connect, ConnectError, Read, IoError}
@@ -39,7 +45,7 @@ public class SerialService extends Service implements SerialListener {
     }
 
     private final Handler mainLooper;
-    private final IBinder binder;
+    public final IBinder binder;
     private final Queue<QueueItem> queue1, queue2;
 
     private SerialSocket socket;

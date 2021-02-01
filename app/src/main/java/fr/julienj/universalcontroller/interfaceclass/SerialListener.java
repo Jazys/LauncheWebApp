@@ -1,6 +1,6 @@
-package fr.julienj.myapplication;
+package fr.julienj.universalcontroller.interfaceclass;
 
-interface SerialListener {
+public interface SerialListener {
     void onSerialConnect      ();
     void onSerialConnectError (Exception e);
     void onSerialRead         (byte[] data);
