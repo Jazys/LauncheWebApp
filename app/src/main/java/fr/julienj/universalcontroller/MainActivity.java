@@ -201,10 +201,6 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
-
-
-
-
         //Pour demander les permissions
         if (Build.VERSION.SDK_INT >= 23) {
             int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
@@ -219,6 +215,17 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             }
         }
+    }
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.i(TAG, "onStart");
+        if(service != null)
+            service.attach(serialListenerUsb);
+        else
+            getApplicationContext().startForegroundService(new Intent(this, SerialService.class));
 
         Button startServeur = (Button) findViewById(R.id.buttonStartServer);
         startServeur.setOnClickListener( new View.OnClickListener() {
@@ -314,17 +321,6 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
                 getApplicationContext().stopService(new Intent(getApplication(), BLEService.class));
             }
         });
-    }
-
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Log.i(TAG, "onStart");
-        if(service != null)
-            service.attach(this);
-        else
-            getApplicationContext().startForegroundService(new Intent(this, SerialService.class));
     }
 
     @Override
