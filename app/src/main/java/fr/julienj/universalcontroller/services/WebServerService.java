@@ -13,6 +13,8 @@ public class WebServerService extends Service {
     private static final String TAG = "WebServerService";
     private final IBinder mBinder = new WebServerBinder();
 
+    public boolean isRunning=false;
+
     public class WebServerBinder extends Binder {
         public WebServerService getService() {
             return WebServerService.this;
@@ -27,12 +29,14 @@ public class WebServerService extends Service {
     public void startWebServer()
     {
         TinyWebServer.startServer("0.0.0.0", Constants.PORT_HTTP, "", getApplicationContext().getAssets());
+        isRunning=true;
         Log.i(TAG, "startWebServer");
     }
 
     public void stopWebServer()
     {
         TinyWebServer.stopServer();
+        isRunning=false;
     }
 
     @Override

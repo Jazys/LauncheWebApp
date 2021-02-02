@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
@@ -48,83 +49,13 @@ import fr.julienj.universalcontroller.utils.HexDump;
 //https://abhiandroid.com/ui/gridview
 //http://javamind-fr.blogspot.com/2013/05/gridlayout-pour-creer-des-tableaux-ou.html
 
-public class MainActivity extends AppCompatActivity  implements ServiceConnection, SerialListener {
+//Faire du propre
+//Faire des toast pour indiquer que les service démarre
+//Faire changer les couleurs des bouttons en fonction des états des services et griser le bouton pas possible
+//Faire des notifications pour le service Bluetooth
+//Faire un bouton pour lancer serveur + bluetooth
 
-    @Override
-    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-
-        if( iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.SerialService"))
-        {
-            Log.i(TAG, "Service démarré SerialService");
-            service = ((SerialService.SerialBinder) iBinder).getService();
-            service.attach(this);
-        }
-        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.WebServerService"))
-        {
-            Log.i(TAG, "Service démarré WebServerService");
-            serviceWeb = ((WebServerService.WebServerBinder) iBinder).getService();
-            serviceWeb.startWebServer();
-        }
-        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.WebSocketServerService"))
-        {
-            Log.i(TAG, "Service démarré WebSocketServerService");
-            serviceWSS = ((WebSocketServerService.WebSocketServerBinder) iBinder).getService();
-            serviceWSS.startWSS();
-        }
-        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.BluetoothService"))
-        {
-            Log.i(TAG, "Service démarré BluetoothService");
-            serviceBluetooth = ((BluetoothService.BluetoothSocketSerie) iBinder).getService();
-            serviceBluetooth.startBluetoothServer();
-        }
-        else if (iBinder.getClass().toString().contains("fr.julienj.universalcontroller.services.BLEService"))
-        {
-            Log.i(TAG, "Service démarré serviceBLE");
-            serviceBLE = ((BLEService.BLEGatt) iBinder).getService();
-            serviceBLE.startConnexion();
-        }
-    }
-
-    @Override
-    public void onServiceDisconnected(ComponentName componentName) {
-        service = null;
-    }
-
-    @Override
-    public void onSerialConnect() {
-
-    }
-
-    @Override
-    public void onSerialConnectError(Exception e) {
-
-    }
-
-    @Override
-    public void onSerialRead(byte[] data) {
-        String mess="";
-        for(int i=0 ; i<data.length; i++){
-            mess+= String.valueOf((char)data[i]);
-        }
-        Log.i(TAG, "Serial USB "+mess);
-
-        final String messView=mess;
-
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if(lastDataSerial!=null)
-                    lastDataSerial.setText("Last data "+messView);
-            }
-        });
-
-
-    }
-
-    @Override
-    public void onSerialIoError(Exception e) {
-        //disconnectUSBLS();
-    }
+public class MainActivity extends AppCompatActivity  {
 
     private static final String TAG = "Main";
     private enum UsbPermission { Unknown, Requested, Granted, Denied };
@@ -151,6 +82,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
     private TextView lastDataSerial;
     private Handler handler = new Handler();
     private SerialListener serialListenerUsb;
+    private SerialListener serialListenerBluetooth;
 
     private boolean lsConnected=false;
 
@@ -198,6 +130,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
         //Pour avoir la fenetre en plein écran
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
@@ -224,15 +157,20 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         Log.i(TAG, "onStart");
         if(service != null)
             service.attach(serialListenerUsb);
-        else
-            getApplicationContext().startForegroundService(new Intent(this, SerialService.class));
+
+        if(serviceBluetooth!=null)
+            serviceBluetooth.attach(serialListenerBluetooth);
+        //else
+        //    getApplicationContext().startForegroundService(new Intent(this, SerialService.class));
 
         Button startServeur = (Button) findViewById(R.id.buttonStartServer);
         startServeur.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                bindService(new Intent(getApplication(), WebServerService.class), serviceWebSC, Context.BIND_AUTO_CREATE);
-                bindService(new Intent(getApplication(), WebSocketServerService.class), serviceWSSSC, Context.BIND_AUTO_CREATE);
+                if(serviceWeb==null || (serviceWeb!=null && !serviceWeb.isRunning))
+                    bindService(new Intent(getApplication(), WebServerService.class), serviceWebSC, Context.BIND_AUTO_CREATE);
+                if(serviceWSS==null || (serviceWSS!=null && !serviceWSS.isRunning))
+                    bindService(new Intent(getApplication(), WebSocketServerService.class), serviceWSSSC, Context.BIND_AUTO_CREATE);
             }
         });
 
@@ -240,10 +178,19 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         stopServer.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                unbindService(serviceWebSC);
-                unbindService(serviceWSSSC);
-                getApplicationContext().stopService(new Intent(getApplication(), WebServerService.class));
-                getApplicationContext().stopService(new Intent(getApplication(), WebSocketServerService.class));
+
+                if(serviceWeb!=null && serviceWeb.isRunning)
+                {
+                    unbindService(serviceWebSC);
+                    getApplicationContext().stopService(new Intent(getApplication(), WebServerService.class));
+                }
+
+                if(serviceWSS!=null && serviceWSS.isRunning)
+                {
+                    unbindService(serviceWSSSC);
+                    getApplicationContext().stopService(new Intent(getApplication(), WebSocketServerService.class));
+                }
+
             }
         });
 
@@ -255,7 +202,7 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         int ipAddress = wifiInf.getIpAddress();
         String ip = String.format("%d.%d.%d.%d", (ipAddress & 0xff),(ipAddress >> 8 & 0xff),(ipAddress >> 16 & 0xff),(ipAddress >> 24 & 0xff));
 
-        ipTextView.setText(ip);
+        ipTextView.setText("Adresse Ip du téléphone "+ip);
 
         Log.i(TAG, "ip "+ip);
 
@@ -267,7 +214,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             @Override
             public void onClick(View v) {
-                bindService(new Intent(getApplication(), SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
+                if(service==null || (service!=null && !service.isRunning))
+                    bindService(new Intent(getApplication(), SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
 
             }
         });
@@ -277,8 +225,12 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             @Override
             public void onClick(View v) {
-                unbindService(serviceSerailSC);
-                getApplicationContext().stopService(new Intent(getApplication(), SerialService.class));
+
+                if(service!=null && service.isRunning)
+                {
+                    unbindService(serviceSerailSC);
+                    getApplicationContext().stopService(new Intent(getApplication(), SerialService.class));
+                }
 
             }
         });
@@ -306,8 +258,12 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         startBluetooth.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                bindService(new Intent(getApplication(), BluetoothService.class), serviceBluetoothSC, Context.BIND_AUTO_CREATE);
-                bindService(new Intent(getApplication(), BLEService.class), serviceBLESC, Context.BIND_AUTO_CREATE);
+
+                if(serviceBluetooth==null || (serviceBluetooth!=null && !serviceBluetooth.isRunning))
+                    bindService(new Intent(getApplication(), BluetoothService.class), serviceBluetoothSC, Context.BIND_AUTO_CREATE);
+
+                if(serviceBLE==null || (serviceBLE!=null && !serviceBLE.isRunning))
+                    bindService(new Intent(getApplication(), BLEService.class), serviceBLESC, Context.BIND_AUTO_CREATE);
             }
         });
 
@@ -315,10 +271,16 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
         stopBluetooth.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                unbindService(serviceBluetoothSC);
-                unbindService(serviceBLESC);
-                getApplicationContext().stopService(new Intent(getApplication(), BluetoothService.class));
-                getApplicationContext().stopService(new Intent(getApplication(), BLEService.class));
+
+                if(serviceBluetooth!=null && serviceBluetooth.isRunning) {
+                    unbindService(serviceBluetoothSC);
+                    getApplicationContext().stopService(new Intent(getApplication(), BluetoothService.class));
+                }
+
+                if(serviceBLE!=null && serviceBLE.isRunning) {
+                    unbindService(serviceBLESC);
+                    getApplicationContext().stopService(new Intent(getApplication(), BLEService.class));
+                }
             }
         });
     }
@@ -419,7 +381,8 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
             public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
                 Log.i(TAG, "Service démarré BluetoothService");
                 serviceBluetooth = ((BluetoothService.BluetoothSocketSerie) iBinder).getService();
-                serviceBluetooth.startBluetoothServer();
+                serviceBluetooth.startBluetoothServer(2);
+                serviceBluetooth.attach(serialListenerBluetooth);
             }
 
             @Override
@@ -484,6 +447,50 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
             }
         };
 
+        serialListenerBluetooth= new SerialListener() {
+            @Override
+            public void onSerialConnect() {
+
+            }
+
+            @Override
+            public void onSerialConnectError(Exception e) {
+
+            }
+
+            @Override
+            public void onSerialRead(byte[] data) {
+                String mess="";
+                for(int i=0 ; i<data.length; i++){
+                    mess+= String.valueOf((char)data[i]);
+                }
+                Log.i(TAG, "Serial Bluetooth "+mess);
+
+                if(serviceWSS!=null && serviceWSS.isRunning)
+                    serviceWSS.sendMessage(mess);
+
+                final String messView=mess;
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (lastDataSerial != null && messView.length()>2)
+                        {
+                            lastDataSerial.setText("Last data BT "+messView);
+                            lastDataSerial.invalidate();
+                            lastDataSerial.requestLayout();
+                            Log.i(TAG, "Serial Bluetooth");
+                        }
+
+                    }});
+            }
+
+            @Override
+            public void onSerialIoError(Exception e) {
+
+            }
+        };
+
 
     }
 
@@ -529,8 +536,6 @@ public class MainActivity extends AppCompatActivity  implements ServiceConnectio
 
             SerialSocket socket = new SerialSocket(getApplicationContext(), usbConnection, usbSerialPort);
             service.connect(socket);
-
-            onSerialConnect();
 
             Log.i(TAG, "Liaison série USB ouverte sur XIAO");
             lsConnected=true;

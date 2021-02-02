@@ -14,6 +14,7 @@ import fr.julienj.universalcontroller.Constants;
 public class WebSocketServerService extends Service {
 
     private static final String TAG = "WebSocketServer";
+    public boolean isRunning=false;
 
     private final IBinder mBinder = new WebSocketServerBinder();
     private WebSocketServer socketWSS = null;
@@ -35,6 +36,7 @@ public class WebSocketServerService extends Service {
         try {
             socketWSS = new WebSocketServer(Constants.PORT_WS);
             socketWSS.start();
+            isRunning=true;
             Log.i(TAG,"startWSS");
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -45,6 +47,7 @@ public class WebSocketServerService extends Service {
         try
         {
             socketWSS.stop();
+            isRunning=false;
         }
         catch (IOException e)
         {
@@ -53,6 +56,11 @@ public class WebSocketServerService extends Service {
             e.printStackTrace();
         }
 
+    }
+
+    public void sendMessage(String data)
+    {
+        socketWSS.broadcast(data);
     }
 
     @Override

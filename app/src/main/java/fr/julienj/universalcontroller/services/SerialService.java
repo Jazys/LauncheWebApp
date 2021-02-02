@@ -29,6 +29,7 @@ import fr.julienj.universalcontroller.interfaceclass.SerialListener;
 public class SerialService extends Service implements SerialListener {
 
     private static final String TAG = "SerialService";
+    public boolean isRunning=false;
 
     public class SerialBinder extends Binder {
         public SerialService getService() { return SerialService.this; }
@@ -79,8 +80,8 @@ public class SerialService extends Service implements SerialListener {
                 .setContentTitle(getResources().getString(R.string.app_name))
                 .setContentText(socket != null ? "Connected to "+socket.getName() : "Background Service")
                 .setContentIntent(restartPendingIntent)
-                .setOngoing(true)
-                .addAction(new NotificationCompat.Action(R.drawable.ic_launcher_background, "Disconnect", disconnectPendingIntent));
+                .setOngoing(true);
+                //.addAction(new NotificationCompat.Action(R.drawable.ic_launcher_background, "Disconnect", disconnectPendingIntent));
         // @drawable/ic_notification created with Android Studio -> New -> Image Asset using @color/colorPrimaryDark as background color
         // Android < API 21 does not support vectorDrawables in notifications, so both drawables used here, are created as .png instead of .xml
         Notification notification = builder.build();
@@ -121,6 +122,7 @@ public class SerialService extends Service implements SerialListener {
         socket.connect(this);
         this.socket = socket;
         connected = true;
+        isRunning=true;
     }
 
     public void disconnect() {
@@ -129,6 +131,7 @@ public class SerialService extends Service implements SerialListener {
         if(socket != null) {
             socket.disconnect();
             socket = null;
+            isRunning=false;
         }
     }
 

@@ -45,7 +45,7 @@ public class WebSocketServer extends org.java_websocket.server.WebSocketServer {
 
     private static final String TAG = "WebSocketServer";
 
-    HashMap<String,WebSocket> client= new HashMap<String, WebSocket>();
+    public HashMap<String,WebSocket> client= new HashMap<String, WebSocket>();
 
     public WebSocketServer(int port) throws UnknownHostException {
         super(new InetSocketAddress(port));

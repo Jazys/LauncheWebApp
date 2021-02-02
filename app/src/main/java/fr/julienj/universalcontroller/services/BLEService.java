@@ -33,6 +33,8 @@ public class BLEService extends Service {
     private final IBinder mBinder = new BLEGatt();
     private static final String TAG = "BLEService";
 
+    public boolean isRunning=false;
+
     private BluetoothCentralManager central;
     private BluetoothPeripheral peripheral;
 
@@ -181,13 +183,16 @@ public class BLEService extends Service {
 
         //   central.scanForPeripherals();
         Log.i(TAG, "Connexion BLE "+peripheral.getName()+": "+peripheral.readRemoteRssi()+ ":"+peripheral.getAddress());
-        central.autoConnectPeripheral(peripheral, peripheralCallback);
+
+
+        isRunning=true;
 
 
     }
 
     public void stopBluetoothServer() {
         central.cancelConnection(peripheral);
+        isRunning=false;
     }
 
     @Override
