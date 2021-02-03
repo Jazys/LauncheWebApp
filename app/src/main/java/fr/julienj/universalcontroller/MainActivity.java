@@ -1,6 +1,7 @@
 package fr.julienj.universalcontroller;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -9,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
@@ -29,10 +31,12 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,6 +68,11 @@ import fr.julienj.universalcontroller.utils.Utils;
 public class MainActivity extends AppCompatActivity  {
 
     private static final String TAG = "Main";
+    private final String PREF_NAME="GameServeController";
+    private final String sharePrefUsbDevice="usbdeviceID";
+    private final String sharePrefM1BT="m1BTMac";
+    private final String sharePrefM2BT="m2BTMac";
+
     private enum UsbPermission { Unknown, Requested, Granted, Denied };
     private UsbPermission usbPermission = UsbPermission.Unknown;
     private static final String url = "http://127.0.0.1:9000/index.html";
@@ -73,7 +82,7 @@ public class MainActivity extends AppCompatActivity  {
     private UsbSerialPort usbSerialPort;
     private boolean scanning = false;
     private SerialInputOutputManager usbIoManager;
-    private SerialService service;
+    private SerialService serviceUSB;
     private WebServerService serviceWeb;
     private WebSocketServerService serviceWSS;
     private BluetoothService serviceBluetooth;
@@ -91,11 +100,14 @@ public class MainActivity extends AppCompatActivity  {
     private SerialListener serialListenerBluetooth;
 
     private boolean lsConnected=false;
+    SharedPreferences settings;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        settings = getSharedPreferences(PREF_NAME, 0);
 
         CreateServiceConnexion();
         if(SingletonApp.getInstance().isActivityRecreate==false)
@@ -156,8 +168,8 @@ public class MainActivity extends AppCompatActivity  {
     public void onStart() {
         super.onStart();
         Log.i(TAG, "onStart");
-        if(service != null)
-            service.attach(serialListenerUsb);
+        if(serviceUSB != null)
+            serviceUSB.attach(serialListenerUsb);
 
         if(serviceBluetooth!=null)
             serviceBluetooth.attach(serialListenerBluetooth);
@@ -165,22 +177,29 @@ public class MainActivity extends AppCompatActivity  {
         //else
         //    getApplicationContext().startForegroundService(new Intent(this, SerialService.class));
 
+        final Button config= (Button) findViewById(R.id.buttonConfig);
         final Button startServeur = (Button) findViewById(R.id.buttonStartServer);
         final Button stopServer = (Button) findViewById(R.id.buttonStopServer);
         final Button startUSBSerie=(Button) findViewById(R.id.buttonStartUSBSerie);
         final Button stopUSBSerie=(Button) findViewById(R.id.buttonStopUSBSerie);
         final Button startBluetooth = (Button) findViewById(R.id.buttonLaunchBluetooth);
         final Button stopBluetooth = (Button) findViewById(R.id.buttonStopBluetooth);
+        final Button startServiceJeu = (Button) findViewById(R.id.buttonstartservicejeu);
+        final Button stopServiceJeu = (Button) findViewById(R.id.buttonstoptservicejeu);
 
         stopServer.setEnabled(false);
         stopUSBSerie.setEnabled(false);
         stopBluetooth.setEnabled(false);
+        stopServiceJeu.setEnabled(false);
 
         startServeur.setBackgroundColor(Color.GREEN);
         startUSBSerie.setBackgroundColor(Color.GREEN);
         startBluetooth.setBackgroundColor(Color.GREEN);
+        startServiceJeu.setBackgroundColor(Color.GREEN);
 
-        if(service!=null && service.isRunning) {
+
+
+        if(serviceUSB!=null && serviceUSB.isRunning) {
             startUSBSerie.setEnabled(false);
             stopUSBSerie.setEnabled(true);
             startUSBSerie.setBackgroundColor(Color.GRAY);
@@ -196,7 +215,15 @@ public class MainActivity extends AppCompatActivity  {
             startServeur.setEnabled(false);
             stopServer.setEnabled(true);
             startServeur.setBackgroundColor(Color.GRAY);
+            stopServiceJeu.setEnabled(true);
         }
+
+        config.setOnClickListener( new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                displayConfigBox();
+            }
+        });
 
         startServeur.setOnClickListener( new View.OnClickListener() {
             @Override
@@ -258,7 +285,7 @@ public class MainActivity extends AppCompatActivity  {
 
             @Override
             public void onClick(View v) {
-                if(service==null || (service!=null && !service.isRunning))
+                if(serviceUSB==null || (serviceUSB!=null && !serviceUSB.isRunning))
                     bindService(new Intent(getApplication(), SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
 
                 startUSBSerie.setEnabled(false);
@@ -275,7 +302,7 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onClick(View v) {
 
-                if(service!=null && service.isRunning)
+                if(serviceUSB!=null && serviceUSB.isRunning)
                 {
                     unbindService(serviceSerailSC);
                     getApplicationContext().stopService(new Intent(getApplication(), SerialService.class));
@@ -346,13 +373,43 @@ public class MainActivity extends AppCompatActivity  {
                 stopBluetooth.setBackgroundColor(Color.GRAY);
             }
         });
+
+        startServiceJeu.setOnClickListener( new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                startServeur.performClick();
+                startBluetooth.performClick();
+
+                startServiceJeu.setEnabled(false);
+                stopServiceJeu.setEnabled(true);
+                startServiceJeu.setBackgroundColor(Color.GRAY);
+                stopServiceJeu.setBackgroundColor(Color.RED);
+            }
+        });
+
+        stopServiceJeu.setOnClickListener( new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                stopServer.performClick();
+                stopBluetooth.performClick();
+
+                stopServiceJeu.setEnabled(false);
+                startServiceJeu.setEnabled(true);
+                stopServiceJeu.setBackgroundColor(Color.GRAY);
+                startServiceJeu.setBackgroundColor(Color.GREEN);
+            }
+        });
+
+
     }
 
     @Override
     public void onStop() {
         Log.i(TAG, "onStop");
-        if(service != null)
-            service.detach();
+        if(serviceUSB != null)
+            serviceUSB.detach();
         super.onStop();
     }
     @Override
@@ -390,8 +447,8 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
                 Log.i(TAG, "Service démarré SerialService");
-                service = ((SerialService.SerialBinder) iBinder).getService();
-                service.attach(serialListenerUsb);
+                serviceUSB = ((SerialService.SerialBinder) iBinder).getService();
+                serviceUSB.attach(serialListenerUsb);
                 connectUSBLS();
 
                 runOnUiThread(new Runnable()
@@ -405,8 +462,8 @@ public class MainActivity extends AppCompatActivity  {
 
             @Override
             public void onServiceDisconnected(ComponentName componentName) {
-                service.detach();
-                service.disconnect();
+                serviceUSB.detach();
+                serviceUSB.disconnect();
                 disconnectUSBLS();
 
             }
@@ -463,7 +520,7 @@ public class MainActivity extends AppCompatActivity  {
             public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
                 Log.i(TAG, "Service démarré BluetoothService");
                 serviceBluetooth = ((BluetoothService.BluetoothSocketSerie) iBinder).getService();
-                serviceBluetooth.startBluetoothServer(2);
+                serviceBluetooth.startBluetoothServer(settings.getString(sharePrefM1BT, ""),settings.getString(sharePrefM2BT, "") );
                 serviceBluetooth.attach(serialListenerBluetooth);
 
                 runOnUiThread(new Runnable()
@@ -589,10 +646,17 @@ public class MainActivity extends AppCompatActivity  {
         UsbDevice usbXiao=null;
         for(UsbDevice v : manager.getDeviceList().values())
         {
-            if(v.getDeviceId() == Constants.DEVICE_ID_XIAO)
+            Log.i(TAG, "Xiao trouvé via sharePref "+settings.getString(sharePrefUsbDevice, "0"));
+            if(v.getDeviceId() == Integer.parseInt(settings.getString(sharePrefUsbDevice, "0")))
+            {
+                usbXiao=v;
+                Log.i(TAG, "Xiao trouvé via sharePref");
+                break;
+            }else if(v.getDeviceId() == Constants.DEVICE_ID_XIAO)
             {
                 usbXiao=v;
                 Log.i(TAG, "Xiao trouvé");
+                break;
             }
         }
 
@@ -623,7 +687,7 @@ public class MainActivity extends AppCompatActivity  {
             usbSerialPort.setParameters(Constants.BAUD_RATE_XIAO, 8, 1, UsbSerialPort.PARITY_NONE);
 
             SerialSocket socket = new SerialSocket(getApplicationContext(), usbConnection, usbSerialPort);
-            service.connect(socket);
+            serviceUSB.connect(socket);
 
             Log.i(TAG, "Liaison série USB ouverte sur XIAO");
             lsConnected=true;
@@ -644,6 +708,68 @@ public class MainActivity extends AppCompatActivity  {
                 usbSerialPort.close();
         } catch (IOException ignored) {}
         usbSerialPort = null;
+    }
+
+    private void displayConfigBox()
+    {
+        final AlertDialog dialogBuilder = new AlertDialog.Builder(this).create();
+        LayoutInflater inflater = this.getLayoutInflater();
+        View dialogView = inflater.inflate(R.layout.config_box, null);
+
+
+
+        final EditText editTextUSB = (EditText) dialogView.findViewById(R.id.configusbdevice);
+        final EditText editTextM1 = (EditText) dialogView.findViewById(R.id.configbluetooth1);
+        final EditText editTextM2 = (EditText) dialogView.findViewById(R.id.configbluetooth2);
+
+        editTextUSB.setText(settings.getString(sharePrefUsbDevice, ""));
+        editTextM1.setText(settings.getString(sharePrefM1BT, ""));
+        editTextM2.setText(settings.getString(sharePrefM2BT, ""));
+
+        Button button1 = (Button) dialogView.findViewById(R.id.buttonSubmit);
+        Button button2 = (Button) dialogView.findViewById(R.id.buttonCancel);
+
+        button1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SharedPreferences settings = getSharedPreferences(PREF_NAME, 0);
+
+                if(editTextUSB.getText().toString()!="")
+                {
+                    SharedPreferences.Editor editor = settings.edit();
+                    editor.putString(sharePrefUsbDevice, editTextUSB.getText().toString());
+                    // Commit the edits!
+                    editor.commit();
+                }
+                if(editTextM1.getText().toString()!="")
+                {
+                    SharedPreferences.Editor editor = settings.edit();
+                    editor.putString(sharePrefM1BT, editTextM1.getText().toString());
+                    // Commit the edits!
+                    editor.commit();
+                }
+                if(editTextM2.getText().toString()!="")
+                {
+                    SharedPreferences.Editor editor = settings.edit();
+                    editor.putString(sharePrefM2BT, editTextM2.getText().toString());
+                    // Commit the edits!
+                    editor.commit();
+                }
+
+                dialogBuilder.dismiss();
+
+            }
+        });
+        button2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // DO SOMETHINGS
+                dialogBuilder.dismiss();
+            }
+        });
+
+        dialogBuilder.setView(dialogView);
+        dialogBuilder.show();
     }
     
 }

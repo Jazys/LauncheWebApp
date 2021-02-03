@@ -111,23 +111,32 @@ public class BluetoothService extends Service {
         return mBinder;
     }
 
-    public void startBluetoothServer(int numberBluetooth) {
+    public void startBluetoothServer(String nameM1BT, String nameM2BT) {
         mainLooper = new Handler(Looper.getMainLooper());
         bluetooth1 = new Bluetooth(getApplicationContext());
         bluetooth1.onStart();
         Log.i(TAG, "startBluetoothServer1 " + bluetooth1.getPairedDevices());
-        bluetooth1.connectToName(Constants.NAME_BLUETOOTH);
+
+        if(nameM1BT!="") {
+            bluetooth1.connectToName(nameM1BT);
+            Log.i(TAG, "Bluetooth connect with Pref "+nameM1BT);
+        }
+        else {
+            bluetooth1.connectToName(Constants.NAME_BLUETOOTH);
+            Log.i(TAG, "Bluetooth connect with Constant "+Constants.NAME_BLUETOOTH);
+        }
         bluetooth1.setDeviceCallback(deviceCallBackBluetooth1);
         isRunning = true;
 
         //bluetooth.startScanning();
 
 
-        if (numberBluetooth == 2) {
+        if (nameM2BT != "") {
             bluetooth2 = new Bluetooth(getApplicationContext());
             bluetooth2.onStart();
             Log.i(TAG, "startBluetoothServer2 " + bluetooth2.getPairedDevices());
-            bluetooth2.connectToAddress("08:21:EF:6C:9B:78");
+            //bluetooth2.connectToAddress("08:21:EF:6C:9B:78");
+            bluetooth2.connectToName(nameM2BT);
             bluetooth2.setDeviceCallback(deviceCallBackBluetooth2);
 
         }

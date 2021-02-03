@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+    <GridLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:useDefaultMargins="false"
+        android:alignmentMode="alignBounds"
+        android:horizontalSpacing="50dp"
+        android:verticalSpacing="50dp"
+        android:columnCount="2"
+        android:rowCount="4"
+        tools:ignore="MissingConstraints">
+
+
+        <EditText
+            android:id="@+id/configusbdevice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:hint="Numero device USB"
+            android:inputType="textMultiLine|text"
+            android:layout_columnSpan="2"    />
+
+        <EditText
+            android:id="@+id/configbluetooth1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:hint="Manette 1 Bluetooth"
+            android:inputType="textMultiLine|text"
+            android:layout_columnSpan="2"    />
+        <EditText
+            android:id="@+id/configbluetooth2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:hint="Manette 1 Bluetooth"
+            android:inputType="textMultiLine|text"
+            android:layout_columnSpan="2"    />
+
+    <Button
+        android:id="@+id/buttonSubmit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Valider"
+         />
+
+    <Button
+        android:id="@+id/buttonCancel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Annuler"
+        />
+    </GridLayout>
+
+</android.support.constraint.ConstraintLayout>
