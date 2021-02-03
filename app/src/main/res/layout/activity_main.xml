@@ -17,12 +17,12 @@
 
         <TextView
             android:id="@+id/textView"
+            android:layout_weight="1"
+            android:layout_gravity="center_horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="TextView"
-            android:layout_columnSpan="2"
-            tools:layout_editor_absoluteX="176dp"
-            tools:layout_editor_absoluteY="483dp" />
+            android:layout_columnSpan="2"          />
 
         <Button
             android:id="@+id/buttonLaunch"
@@ -30,62 +30,48 @@
             android:layout_height="wrap_content"
             android:text="Lancer l'app"
             android:layout_columnSpan="2"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_weight="1"
+            android:layout_gravity="center_horizontal" />
 
         <Button
             android:id="@+id/buttonStartUSBSerie"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Demarrer USB Serie"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="lance USB Serie"
             />
 
         <Button
             android:id="@+id/buttonStopUSBSerie"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stopper USB Série"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="Stop USB Série"
             />
 
         <Button
             android:id="@+id/buttonStartServer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Demarrer Serveur"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:text="Lance Serveur Web"
             />
 
         <Button
             android:id="@+id/buttonStopServer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stopper Serveur"
-            app:layout_constraintRight_toRightOf="parent"
+            android:text="Stop Serveur Web"
             />
 
         <Button
             android:id="@+id/buttonLaunchBluetooth"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Lancer Service Bluetooth"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:text="Lance Serv. Bluetooth" />
 
         <Button
             android:id="@+id/buttonStopBluetooth"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stopper Service Bluetooth"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:text="Stop Serv. Bluetooth" />
 
         <TextView
             android:id="@+id/SerialText"
@@ -93,6 +79,8 @@
             android:layout_height="wrap_content"
             android:text="Test"
             android:layout_columnSpan="2"
+            android:layout_weight="1"
+            android:layout_gravity="center_horizontal"
              />
 
     </GridLayout>

@@ -13,6 +13,8 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
+
+import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
@@ -32,6 +34,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
 import java.io.IOException;
@@ -45,6 +49,7 @@ import fr.julienj.universalcontroller.services.WebServerService;
 import fr.julienj.universalcontroller.services.WebSocketServerService;
 import fr.julienj.universalcontroller.utils.CustomProber;
 import fr.julienj.universalcontroller.utils.HexDump;
+import fr.julienj.universalcontroller.utils.Utils;
 
 //https://abhiandroid.com/ui/gridview
 //http://javamind-fr.blogspot.com/2013/05/gridlayout-pour-creer-des-tableaux-ou.html
@@ -54,6 +59,7 @@ import fr.julienj.universalcontroller.utils.HexDump;
 //Faire changer les couleurs des bouttons en fonction des états des services et griser le bouton pas possible
 //Faire des notifications pour le service Bluetooth
 //Faire un bouton pour lancer serveur + bluetooth
+//Collapse des cellules pour centrage
 
 public class MainActivity extends AppCompatActivity  {
 
@@ -86,7 +92,6 @@ public class MainActivity extends AppCompatActivity  {
 
     private boolean lsConnected=false;
 
-    private boolean isActivityRecreate=false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,11 +108,8 @@ public class MainActivity extends AppCompatActivity  {
             Log.i(TAG, "onCreate 2 fois");
         }
 
-
         //Pour démarrer le service liée à la connexion en USB
         //bindService(new Intent(this, SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
-
-
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -150,7 +152,6 @@ public class MainActivity extends AppCompatActivity  {
         }
     }
 
-
     @Override
     public void onStart() {
         super.onStart();
@@ -160,10 +161,43 @@ public class MainActivity extends AppCompatActivity  {
 
         if(serviceBluetooth!=null)
             serviceBluetooth.attach(serialListenerBluetooth);
+
         //else
         //    getApplicationContext().startForegroundService(new Intent(this, SerialService.class));
 
-        Button startServeur = (Button) findViewById(R.id.buttonStartServer);
+        final Button startServeur = (Button) findViewById(R.id.buttonStartServer);
+        final Button stopServer = (Button) findViewById(R.id.buttonStopServer);
+        final Button startUSBSerie=(Button) findViewById(R.id.buttonStartUSBSerie);
+        final Button stopUSBSerie=(Button) findViewById(R.id.buttonStopUSBSerie);
+        final Button startBluetooth = (Button) findViewById(R.id.buttonLaunchBluetooth);
+        final Button stopBluetooth = (Button) findViewById(R.id.buttonStopBluetooth);
+
+        stopServer.setEnabled(false);
+        stopUSBSerie.setEnabled(false);
+        stopBluetooth.setEnabled(false);
+
+        startServeur.setBackgroundColor(Color.GREEN);
+        startUSBSerie.setBackgroundColor(Color.GREEN);
+        startBluetooth.setBackgroundColor(Color.GREEN);
+
+        if(service!=null && service.isRunning) {
+            startUSBSerie.setEnabled(false);
+            stopUSBSerie.setEnabled(true);
+            startUSBSerie.setBackgroundColor(Color.GRAY);
+        }
+
+        if(serviceBluetooth!=null && serviceBluetooth.isRunning) {
+            startBluetooth.setEnabled(false);
+            stopBluetooth.setEnabled(true);
+            startBluetooth.setBackgroundColor(Color.GRAY);
+        }
+
+        if(serviceWeb!=null && serviceWeb.isRunning) {
+            startServeur.setEnabled(false);
+            stopServer.setEnabled(true);
+            startServeur.setBackgroundColor(Color.GRAY);
+        }
+
         startServeur.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -171,10 +205,15 @@ public class MainActivity extends AppCompatActivity  {
                     bindService(new Intent(getApplication(), WebServerService.class), serviceWebSC, Context.BIND_AUTO_CREATE);
                 if(serviceWSS==null || (serviceWSS!=null && !serviceWSS.isRunning))
                     bindService(new Intent(getApplication(), WebSocketServerService.class), serviceWSSSC, Context.BIND_AUTO_CREATE);
+
+                startServeur.setEnabled(false);
+                startServeur.setBackgroundColor(Color.GRAY);
+                stopServer.setEnabled(true);
+                stopServer.setBackgroundColor(Color.RED);
             }
         });
 
-        Button stopServer = (Button) findViewById(R.id.buttonStopServer);
+
         stopServer.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -191,6 +230,11 @@ public class MainActivity extends AppCompatActivity  {
                     getApplicationContext().stopService(new Intent(getApplication(), WebSocketServerService.class));
                 }
 
+                startServeur.setEnabled(true);
+                stopServer.setEnabled(false);
+                startServeur.setBackgroundColor(Color.GREEN);
+                stopServer.setBackgroundColor(Color.GRAY);
+
             }
         });
 
@@ -204,12 +248,12 @@ public class MainActivity extends AppCompatActivity  {
 
         ipTextView.setText("Adresse Ip du téléphone "+ip);
 
-        Log.i(TAG, "ip "+ip);
+        Log.i(TAG, "Adresse Ip du téléphone "+ip);
 
         lastDataSerial = (TextView)findViewById(R.id.SerialText);
-        lastDataSerial.setText("Data :");
+        lastDataSerial.setText("Données :");
 
-        Button startUSBSerie=(Button) findViewById(R.id.buttonStartUSBSerie);
+
         startUSBSerie.setOnClickListener( new View.OnClickListener() {
 
             @Override
@@ -217,10 +261,15 @@ public class MainActivity extends AppCompatActivity  {
                 if(service==null || (service!=null && !service.isRunning))
                     bindService(new Intent(getApplication(), SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
 
+                startUSBSerie.setEnabled(false);
+                stopUSBSerie.setEnabled(true);
+                stopUSBSerie.setBackgroundColor(Color.RED);
+                startUSBSerie.setBackgroundColor(Color.GRAY);
+
             }
         });
 
-        Button stopUSBSerie=(Button) findViewById(R.id.buttonStopUSBSerie);
+
         stopUSBSerie.setOnClickListener( new View.OnClickListener() {
 
             @Override
@@ -232,9 +281,13 @@ public class MainActivity extends AppCompatActivity  {
                     getApplicationContext().stopService(new Intent(getApplication(), SerialService.class));
                 }
 
+                startUSBSerie.setEnabled(true);
+                stopUSBSerie.setEnabled(false);
+                startUSBSerie.setBackgroundColor(Color.GREEN);
+                stopUSBSerie.setBackgroundColor(Color.GRAY);
+
             }
         });
-
 
         Button startApp = (Button) findViewById(R.id.buttonLaunch);
         startApp.setOnClickListener( new View.OnClickListener() {
@@ -254,7 +307,7 @@ public class MainActivity extends AppCompatActivity  {
             }
         });
 
-        Button startBluetooth = (Button) findViewById(R.id.buttonLaunchBluetooth);
+
         startBluetooth.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -264,10 +317,15 @@ public class MainActivity extends AppCompatActivity  {
 
                 if(serviceBLE==null || (serviceBLE!=null && !serviceBLE.isRunning))
                     bindService(new Intent(getApplication(), BLEService.class), serviceBLESC, Context.BIND_AUTO_CREATE);
+
+                startBluetooth.setEnabled(false);
+                stopBluetooth.setEnabled(true);
+                stopBluetooth.setBackgroundColor(Color.RED);
+                startBluetooth.setBackgroundColor(Color.GRAY);
             }
         });
 
-        Button stopBluetooth = (Button) findViewById(R.id.buttonStopBluetooth);
+
         stopBluetooth.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -281,6 +339,11 @@ public class MainActivity extends AppCompatActivity  {
                     unbindService(serviceBLESC);
                     getApplicationContext().stopService(new Intent(getApplication(), BLEService.class));
                 }
+
+                startBluetooth.setEnabled(true);
+                stopBluetooth.setEnabled(false);
+                startBluetooth.setBackgroundColor(Color.GREEN);
+                stopBluetooth.setBackgroundColor(Color.GRAY);
             }
         });
     }
@@ -295,15 +358,10 @@ public class MainActivity extends AppCompatActivity  {
     @Override
     public void onDestroy() {
         Log.i(TAG, "onDestroy");
+
         if (lsConnected != false)
             disconnectUSBLS();
 
-        /*unbindService(serviceSerailSC);
-
-        unbindService(serviceWebSC);
-        unbindService(serviceWSSSC);
-        unbindService(serviceBluetoothSC);
-        unbindService(serviceBLESC);*/
         getApplicationContext().stopService(new Intent(this, SerialService.class));
         getApplicationContext().stopService(new Intent(this, WebServerService.class));
         getApplicationContext().stopService(new Intent(this, WebSocketServerService.class));
@@ -335,6 +393,14 @@ public class MainActivity extends AppCompatActivity  {
                 service = ((SerialService.SerialBinder) iBinder).getService();
                 service.attach(serialListenerUsb);
                 connectUSBLS();
+
+                runOnUiThread(new Runnable()
+                {
+                    public void run()
+                    {
+                        Toast.makeText(getApplicationContext(), "Démarrage du service liaison série", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             @Override
@@ -353,6 +419,14 @@ public class MainActivity extends AppCompatActivity  {
                 serviceWeb = ((WebServerService.WebServerBinder) iBinder).getService();
                 serviceWeb.startWebServer();
 
+                runOnUiThread(new Runnable()
+                {
+                    public void run()
+                    {
+                        Toast.makeText(getApplicationContext(), "Démarrage du service WebServerServiced", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
             }
 
             @Override
@@ -367,6 +441,14 @@ public class MainActivity extends AppCompatActivity  {
                 Log.i(TAG, "Service démarré WebSocketServerService");
                 serviceWSS = ((WebSocketServerService.WebSocketServerBinder) iBinder).getService();
                 serviceWSS.startWSS();
+
+                runOnUiThread(new Runnable()
+                {
+                    public void run()
+                    {
+                        Toast.makeText(getApplicationContext(), "Démarrage du service WebSocketServerService", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
             }
 
@@ -383,6 +465,14 @@ public class MainActivity extends AppCompatActivity  {
                 serviceBluetooth = ((BluetoothService.BluetoothSocketSerie) iBinder).getService();
                 serviceBluetooth.startBluetoothServer(2);
                 serviceBluetooth.attach(serialListenerBluetooth);
+
+                runOnUiThread(new Runnable()
+                {
+                    public void run()
+                    {
+                        Toast.makeText(getApplicationContext(), "Démarrage du service BluetoothService", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             @Override
@@ -397,6 +487,14 @@ public class MainActivity extends AppCompatActivity  {
                 Log.i(TAG, "Service démarré serviceBLE");
                 serviceBLE = ((BLEService.BLEGatt) iBinder).getService();
                 serviceBLE.startConnexion();
+
+                runOnUiThread(new Runnable()
+                {
+                    public void run()
+                    {
+                        Toast.makeText(getApplicationContext(), "Démarrage du service serviceBLE", Toast.LENGTH_SHORT).show();
+                    }
+                });
 
             }
 
@@ -419,23 +517,18 @@ public class MainActivity extends AppCompatActivity  {
 
             @Override
             public void onSerialRead(byte[] data) {
-                String mess="";
-                for(int i=0 ; i<data.length; i++){
-                    mess+= String.valueOf((char)data[i]);
-                }
-                Log.i(TAG, "Serial USB "+mess);
+                final String dataStr= Utils.getMessageByte(data);
 
-                final String messView=mess;
+                Log.i(TAG, "Serial USB "+dataStr);
 
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (lastDataSerial != null && messView.length()>2)
+                        if (lastDataSerial != null && dataStr.length()>2)
                         {
-                            lastDataSerial.setText("Last data "+messView);
+                            lastDataSerial.setText("Last data "+dataStr);
                             lastDataSerial.invalidate();
                             lastDataSerial.requestLayout();
-                            Log.i(TAG, "Serial USB 2");
                         }
 
                     }});
@@ -460,23 +553,18 @@ public class MainActivity extends AppCompatActivity  {
 
             @Override
             public void onSerialRead(byte[] data) {
-                String mess="";
-                for(int i=0 ; i<data.length; i++){
-                    mess+= String.valueOf((char)data[i]);
-                }
-                Log.i(TAG, "Serial Bluetooth "+mess);
+                final String dataStr= Utils.getMessageByte(data);
+                Log.i(TAG, "Serial Bluetooth "+dataStr);
 
                 if(serviceWSS!=null && serviceWSS.isRunning)
-                    serviceWSS.sendMessage(mess);
-
-                final String messView=mess;
+                    serviceWSS.sendMessage(dataStr);
 
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (lastDataSerial != null && messView.length()>2)
+                        if (lastDataSerial != null && dataStr.length()>2)
                         {
-                            lastDataSerial.setText("Last data BT "+messView);
+                            lastDataSerial.setText("Last data BT "+dataStr);
                             lastDataSerial.invalidate();
                             lastDataSerial.requestLayout();
                             Log.i(TAG, "Serial Bluetooth");
