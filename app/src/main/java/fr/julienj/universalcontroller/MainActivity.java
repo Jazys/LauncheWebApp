@@ -99,6 +99,7 @@ public class MainActivity extends AppCompatActivity  {
     private SerialListener serialListenerUsb;
     private SerialListener serialListenerBluetooth;
 
+
     private boolean lsConnected=false;
     SharedPreferences settings;
 
@@ -132,6 +133,7 @@ public class MainActivity extends AppCompatActivity  {
                     connectUSBLS();
                 }else if(intent.getAction().equals(Constants.USB_ATTACHED)) {
                     //bindService(new Intent(getApplication(), SerialService.class), serviceSerailSC, Context.BIND_AUTO_CREATE);
+
                 }else if(intent.getAction().equals(Constants.USB_DETTACHED))
                 {
                     //disconnectUSBLS();
@@ -162,6 +164,8 @@ public class MainActivity extends AppCompatActivity  {
 
             }
         }
+
+
     }
 
     @Override
@@ -388,20 +392,22 @@ public class MainActivity extends AppCompatActivity  {
             }
         });
 
-        stopServiceJeu.setOnClickListener( new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
 
-                stopServer.performClick();
-                stopBluetooth.performClick();
 
-                stopServiceJeu.setEnabled(false);
-                startServiceJeu.setEnabled(true);
-                stopServiceJeu.setBackgroundColor(Color.GRAY);
-                startServiceJeu.setBackgroundColor(Color.GREEN);
-            }
-        });
+        UsbManager manager = (UsbManager) getApplicationContext().getSystemService(Context.USB_SERVICE);
 
+        for(UsbDevice v : manager.getDeviceList().values()) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+
+                    lastDataSerial.setText("Info USB : \n" + v.getManufacturerName() + "\n" + v.getProductName() + "\n" +
+                            v.getProductId() + "\n" + v.getVendorId() + "\n Numero Device " + v.getDeviceId());
+                    lastDataSerial.invalidate();
+                    lastDataSerial.requestLayout();
+                }
+            });
+        }
 
     }
 
