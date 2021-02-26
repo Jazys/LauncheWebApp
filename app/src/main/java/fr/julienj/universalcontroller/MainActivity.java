@@ -392,6 +392,20 @@ public class MainActivity extends AppCompatActivity  {
             }
         });
 
+        stopServiceJeu.setOnClickListener( new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                stopServer.performClick();
+                stopBluetooth.performClick();
+
+                stopServiceJeu.setEnabled(false);
+                startServiceJeu.setEnabled(true);
+                stopServiceJeu.setBackgroundColor(Color.GRAY);
+                startServiceJeu.setBackgroundColor(Color.GREEN);
+            }
+        });
+
 
 
         UsbManager manager = (UsbManager) getApplicationContext().getSystemService(Context.USB_SERVICE);
