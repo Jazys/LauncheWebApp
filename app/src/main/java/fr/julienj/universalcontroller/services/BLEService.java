@@ -160,6 +160,9 @@ public class BLEService extends Service {
 
                 List<UUID> serviceList = new ArrayList<>();
 
+                if(parcelUuids==null)
+                    return;
+
                 for (int i = 0; i < parcelUuids.size(); i++)
                 {
                     UUID serviceUUID = parcelUuids.get(i).getUuid();

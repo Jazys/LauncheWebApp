@@ -598,6 +598,9 @@ public class MainActivity extends AppCompatActivity  {
 
                 Log.i(TAG, "Serial USB "+dataStr);
 
+                if(serviceWSS!=null && serviceWSS.isRunning)
+                    serviceWSS.sendMessage(dataStr);
+
                 handler.post(new Runnable() {
                     @Override
                     public void run() {

@@ -153,7 +153,8 @@ public class TinyWebServer extends Thread {
     private static final Pattern BOUNDARY_PATTERN = Pattern.compile(BOUNDARY_REGEX, Pattern.CASE_INSENSITIVE);
 
 
-    public static String WEB_DIR_PATH="mnt/sdcard/www";
+    //public static String WEB_DIR_PATH="mnt/sdcard/www";
+    public static String WEB_DIR_PATH="www";
     public static String SERVER_IP="localhost";
     public static int SERVER_PORT=9000;
     public static boolean isStart=true;
@@ -510,8 +511,8 @@ public class TinyWebServer extends Thread {
             File ifile=new File(fileName);
             if(true){
                 if(filetype.equalsIgnoreCase("image/png") || filetype.equalsIgnoreCase("image/jpeg") || filetype.equalsIgnoreCase("image/gif") || filetype.equalsIgnoreCase("image/jpg") || filetype.equalsIgnoreCase("audio/mpeg")){
-                    //InputStream fis = assetManager.open(fileName);
-                    InputStream fis = new FileInputStream(fileName);
+                    InputStream fis = assetManager.open(fileName);
+                    //InputStream fis = new FileInputStream(fileName);
                     byte[] buffer = new byte[fis.available()];
                     while (fis.read(buffer) != -1) {}
                     fis.close();
@@ -529,8 +530,8 @@ public class TinyWebServer extends Thread {
         //System.out.println("jj "+fileName);
         try{
 
-            //InputStream fis = assetManager.open(fileName);
-            InputStream fis = new FileInputStream(fileName);
+            InputStream fis = assetManager.open(fileName);
+            //InputStream fis = new FileInputStream(fileName);
             byte[] buffer = new byte[10];
             StringBuilder sb = new StringBuilder();
             while (fis.read(buffer) != -1) {
