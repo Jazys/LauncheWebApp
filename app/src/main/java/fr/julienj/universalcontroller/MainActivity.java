@@ -26,6 +26,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -55,6 +56,8 @@ import fr.julienj.universalcontroller.utils.CustomProber;
 import fr.julienj.universalcontroller.utils.HexDump;
 import fr.julienj.universalcontroller.utils.Utils;
 
+import static fr.julienj.universalcontroller.Constants.GRANT_WRITE_EXTERNAL_STORAGE;
+
 //https://abhiandroid.com/ui/gridview
 //http://javamind-fr.blogspot.com/2013/05/gridlayout-pour-creer-des-tableaux-ou.html
 
@@ -83,7 +86,7 @@ public class MainActivity extends AppCompatActivity  {
     private boolean scanning = false;
     private SerialInputOutputManager usbIoManager;
     private SerialService serviceUSB;
-    private WebServerService serviceWeb;
+    //private WebServerService serviceWeb;
     private WebSocketServerService serviceWSS;
     private BluetoothService serviceBluetooth;
     private  BLEService serviceBLE;
@@ -93,6 +96,10 @@ public class MainActivity extends AppCompatActivity  {
     private ServiceConnection serviceWSSSC;
     private ServiceConnection serviceBluetoothSC;
     private  ServiceConnection serviceBLESC;
+
+    private ServerService serviceWeb;
+    private ServiceConnection mConnection;
+
     private TextView ipTextView;
     private TextView lastDataSerial;
     private Handler handler = new Handler();
@@ -102,6 +109,17 @@ public class MainActivity extends AppCompatActivity  {
 
     private boolean lsConnected=false;
     SharedPreferences settings;
+
+    final Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            Bundle b = msg.getData();
+            if (b.containsKey("toast")){
+                Toast.makeText(MainActivity.this, b.getString("msg"), Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    };
 
 
     @Override
@@ -232,8 +250,10 @@ public class MainActivity extends AppCompatActivity  {
         startServeur.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(serviceWeb==null || (serviceWeb!=null && !serviceWeb.isRunning))
-                    bindService(new Intent(getApplication(), WebServerService.class), serviceWebSC, Context.BIND_AUTO_CREATE);
+                if(serviceWeb==null || (serviceWeb!=null && !serviceWeb.isRunning)) {
+                    //bindService(new Intent(getApplication(), WebServerService.class), serviceWebSC, Context.BIND_AUTO_CREATE);
+                    bindService(new Intent(getApplication(), ServerService.class),serviceWebSC , Context.BIND_AUTO_CREATE);
+                }
                 if(serviceWSS==null || (serviceWSS!=null && !serviceWSS.isRunning))
                     bindService(new Intent(getApplication(), WebSocketServerService.class), serviceWSSSC, Context.BIND_AUTO_CREATE);
 
@@ -253,6 +273,7 @@ public class MainActivity extends AppCompatActivity  {
                 {
                     unbindService(serviceWebSC);
                     getApplicationContext().stopService(new Intent(getApplication(), WebServerService.class));
+
                 }
 
                 if(serviceWSS!=null && serviceWSS.isRunning)
@@ -423,6 +444,10 @@ public class MainActivity extends AppCompatActivity  {
             });
         }
 
+        //Intent intent = new Intent(MainActivity.this, ServerService.class);
+        //startServer(mHandler);
+        //startService(intent);
+
     }
 
     @Override
@@ -493,8 +518,8 @@ public class MainActivity extends AppCompatActivity  {
             @Override
             public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
                 Log.i(TAG, "Service démarré WebServerService");
-                serviceWeb = ((WebServerService.WebServerBinder) iBinder).getService();
-                serviceWeb.startWebServer();
+                serviceWeb = ((ServerService.LocalBinder)iBinder).getService();
+                serviceWeb.startServer(handler);
 
                 runOnUiThread(new Runnable()
                 {
@@ -508,7 +533,7 @@ public class MainActivity extends AppCompatActivity  {
 
             @Override
             public void onServiceDisconnected(ComponentName componentName) {
-                serviceWeb.stopWebServer();
+                serviceWeb.stopServer();
             }
         };
 
@@ -659,6 +684,19 @@ public class MainActivity extends AppCompatActivity  {
             }
         };
 
+       /* mConnection = new ServiceConnection() {
+            public void onServiceConnected(ComponentName className, IBinder service) {
+                serviceWeb = ((ServerService.LocalBinder)service).getService();
+                serviceWeb.startServer(handler);
+            }
+
+            public void onServiceDisconnected(ComponentName className) {
+                serviceWeb.stopServer();
+                serviceWeb = null;
+
+            }
+        };*/
+
 
     }
 
@@ -794,5 +832,5 @@ public class MainActivity extends AppCompatActivity  {
         dialogBuilder.setView(dialogView);
         dialogBuilder.show();
     }
-    
+
 }

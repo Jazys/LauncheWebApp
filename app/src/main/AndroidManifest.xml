@@ -56,6 +56,9 @@
         <service android:name="fr.julienj.universalcontroller.services.BluetoothService" />
 
         <service android:name="fr.julienj.universalcontroller.services.BLEService" />
+
+        <service android:name="fr.julienj.universalcontroller.ServerService" />
+
     </application>
 
 </manifest>
