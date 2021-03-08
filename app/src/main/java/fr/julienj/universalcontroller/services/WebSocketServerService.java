@@ -10,12 +10,12 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 
+import androidx.core.app.NotificationCompat;
 import fr.julienj.universalcontroller.Constants;
 import fr.julienj.universalcontroller.R;
 

@@ -13,9 +13,17 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -26,10 +34,11 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -43,7 +52,13 @@ import android.widget.Toast;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
+import com.journeyapps.barcodescanner.BarcodeEncoder;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
+import java.math.BigInteger;
 
 import fr.julienj.universalcontroller.interfaceclass.SerialListener;
 import fr.julienj.universalcontroller.services.BLEService;
@@ -68,7 +83,7 @@ import static fr.julienj.universalcontroller.Constants.GRANT_WRITE_EXTERNAL_STOR
 //Faire un bouton pour lancer serveur + bluetooth
 //Collapse des cellules pour centrage
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String TAG = "Main";
     private final String PREF_NAME="GameServeController";
@@ -109,6 +124,9 @@ public class MainActivity extends AppCompatActivity  {
 
     private boolean lsConnected=false;
     SharedPreferences settings;
+
+    private IntentIntegrator qrScan;
+    private Button buttonScan;
 
     final Handler mHandler = new Handler() {
         @Override
@@ -181,8 +199,20 @@ public class MainActivity extends AppCompatActivity  {
                 requestPermissions(new String[] { Manifest.permission.ACCESS_COARSE_LOCATION }, 1);
 
             }
+
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+
+            }
         }
 
+        qrScan = new IntentIntegrator(this);
+        qrScan.setDesiredBarcodeFormats(IntentIntegrator.QR_CODE_TYPES);
+
+        buttonScan = (Button) findViewById(R.id.buttonqrcode);
+        buttonScan.setOnClickListener(this);
 
     }
 
@@ -831,6 +861,98 @@ public class MainActivity extends AppCompatActivity  {
 
         dialogBuilder.setView(dialogView);
         dialogBuilder.show();
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if (result != null) {
+            //if qrcode has nothing in it
+            if (result.getContents() == null) {
+                Toast.makeText(this, "Result Not Found", Toast.LENGTH_LONG).show();
+            } else {
+                //if qr contains data
+                try {
+                    //converting the data to json
+                    JSONObject obj = new JSONObject(result.getContents());
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    //if control comes here
+                    //that means the encoded format not matches
+                    //in this case you can display whatever data is available on the qrcode
+                    //to a toast
+                    // Decompress the bytes
+
+                    //System.out.println("jj camera "+byteArrayToHex(result.getContents().getBytes()));
+                    final String hexStr=result.getContents();
+                    System.out.println("jj res "+(result.getContents()));
+                    //String outputString= byteArrayToHex(decompress(result.getRawBytes()));
+
+                    final Handler handler = new Handler(Looper.getMainLooper());
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                String resDecomp=new String(Utils.decompress(new BigInteger(hexStr,16).toByteArray()));
+                                System.out.println("jj lol "+resDecomp);
+
+                                String finalMessage="";
+                                System.out.println("jj lol "+resDecomp.length());
+
+                                for (int i=0;i<resDecomp.length();i++)
+                                {
+                                    int tmp;
+                                    if (resDecomp.charAt(i)==' ')
+                                        finalMessage+=' ';
+                                    else {
+                                        tmp = (int) resDecomp.charAt(i) -24;
+                                        //break;
+                                        finalMessage = finalMessage+ (char)(tmp );
+                                    }
+                                }
+                                Log.v("jj",finalMessage);
+                                Toast.makeText(getApplicationContext(), finalMessage, Toast.LENGTH_LONG).show();
+
+                            }catch (Exception e)
+                            {
+
+                            }
+
+                            //System.out.println("jj lol "+finalMessage.toString());
+
+                            //Do something after 100ms
+                        }
+                    }, 100);
+
+
+
+
+
+                    //Toast.makeText(this, outputString, Toast.LENGTH_LONG).show();
+                }
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
+    }
+    @Override
+    public void onClick(View view) {
+        //initiating the qr code scan
+        qrScan.initiateScan();
+    }
+
+    public void createQrCode()
+    {
+        String text="eeeeeeeeeeeeeeeeee"; // Whatever you need to encode in the QR code
+        MultiFormatWriter multiFormatWriter = new MultiFormatWriter();
+        try {
+            BitMatrix bitMatrix = multiFormatWriter.encode(text, BarcodeFormat.QR_CODE,200,200);
+            BarcodeEncoder barcodeEncoder = new BarcodeEncoder();
+            Bitmap bitmap = barcodeEncoder.createBitmap(bitMatrix);
+            //imgview.setImageBitmap(bitmap);
+        } catch (WriterException e) {
+            e.printStackTrace();
+        }
     }
 
 }

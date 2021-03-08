@@ -42,7 +42,6 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import java.lang.reflect.Method;
@@ -50,6 +49,8 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+
+import androidx.core.app.NotificationCompat;
 
 import static fr.julienj.universalcontroller.Constants.*;
 
@@ -210,6 +211,7 @@ public class ServerService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT
         );
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, Constants.NOTIFICATION_CHANNEL)
                     .setSmallIcon(R.drawable.ic_launcher_background)
                     .setColor(getResources().getColor(R.color.colorPrimary))

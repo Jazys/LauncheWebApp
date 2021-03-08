@@ -12,12 +12,13 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.support.v4.app.NotificationCompat;
+
 
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
+import androidx.core.app.NotificationCompat;
 import fr.julienj.universalcontroller.Constants;
 import fr.julienj.universalcontroller.R;
 import fr.julienj.universalcontroller.interfaceclass.SerialListener;

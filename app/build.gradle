@@ -29,8 +29,10 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'com.android.support.constraint:constraint-layout:2.0.4'
     testImplementation 'junit:junit:4.12'
+    //noinspection GradleCompatible
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     //libraries
@@ -47,6 +49,9 @@ dependencies {
 
     //implementation 'com.ramimartin.multibluetooth:AndroidMultiBluetoothLibrary:2.0.4-SNAPSHOT'
     implementation "org.java-websocket:Java-WebSocket:1.5.1"
+
+    //qrcode
+    implementation 'com.journeyapps:zxing-android-embedded:3.4.0'
 
 
 }
